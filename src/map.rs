@@ -113,6 +113,10 @@ impl Map {
         self.height
     }
 
+    pub fn get_rooms(&self) -> &[Rect] {
+        &self.rooms
+    }
+
     pub fn get_player_starting_position(&self) -> (i32, i32) {
         match self.rooms.first() {
             Some(room) => room.center(),
@@ -139,6 +143,22 @@ impl Map {
     pub fn clear_visible_tiles(&mut self) {
         for x in self.visible_tiles.iter_mut() {
             *x = false;
+        }
+    }
+
+    // pub fn is_tile_revealed(&self, x: i32, y: i32) -> bool {
+    //     if let Some(index) = self.get_index(x, y) {
+    //         self.revealed_tiles[index]
+    //     } else {
+    //         false
+    //     }
+    // }
+
+    pub fn is_tile_visible(&self, x: i32, y: i32) -> bool {
+        if let Some(index) = self.get_index(x, y) {
+            self.visible_tiles[index]
+        } else {
+            false
         }
     }
 

@@ -34,3 +34,6 @@ impl Viewshed {
         }
     }
 }
+
+#[derive(Component)]
+pub struct Monster;

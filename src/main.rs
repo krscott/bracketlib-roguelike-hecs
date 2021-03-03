@@ -1,20 +1,29 @@
 use bracket_lib::prelude::*;
+use monster_ai_system::MonsterAi;
 use specs::prelude::*;
 
 mod color;
 mod components;
 mod glyph;
 mod map;
+mod monster_ai_system;
 mod player;
 mod rect;
 mod visibility_system;
 
-use components::{Player, Position, Renderable, Viewshed};
+use components::{Monster, Player, Position, Renderable, Viewshed};
 use map::Map;
 use visibility_system::VisibilitySystem;
 
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum RunState {
+    Paused,
+    Running,
+}
+
 pub struct State {
-    ecs: World,
+    pub ecs: World,
+    pub runstate: RunState,
 }
 
 impl State {
@@ -24,12 +33,16 @@ impl State {
         ecs.register::<Renderable>();
         ecs.register::<Player>();
         ecs.register::<Viewshed>();
+        ecs.register::<Monster>();
 
-        Self { ecs }
+        let runstate = RunState::Running;
+
+        Self { ecs, runstate }
     }
 
     fn run_systems(&mut self) {
         VisibilitySystem.run_now(&self.ecs);
+        MonsterAi.run_now(&self.ecs);
 
         self.ecs.maintain();
     }
@@ -37,19 +50,28 @@ impl State {
 
 impl GameState for State {
     fn tick(&mut self, context: &mut BTerm) {
-        player::player_input(self, context);
-        self.run_systems();
+        match self.runstate {
+            RunState::Paused => {
+                self.runstate = player::player_input(self, context);
+            }
+            RunState::Running => {
+                self.run_systems();
+                self.runstate = RunState::Paused;
+            }
+        }
 
         let positions = self.ecs.read_storage::<Position>();
         let renderables = self.ecs.read_storage::<Renderable>();
-        // let map = self.ecs.fetch::<Map>();
+        let map = self.ecs.fetch::<Map>();
 
         context.cls_bg(color::bg());
 
         map::draw_map(&self.ecs, context);
 
         for (pos, render) in (&positions, &renderables).join() {
-            context.set(pos.x, pos.y, render.fg, render.bg, render.glyph);
+            if map.is_tile_visible(pos.x, pos.y) {
+                context.set(pos.x, pos.y, render.fg, render.bg, render.glyph);
+            }
         }
     }
 }
@@ -63,7 +85,6 @@ fn main() -> BError {
 
     let map = Map::rooms_and_cooridors(80, 50);
     let (player_x, player_y) = map.get_player_starting_position();
-    state.ecs.insert(map);
 
     state
         .ecs
@@ -80,6 +101,32 @@ fn main() -> BError {
         .with(Player)
         .with(Viewshed::with_range(8))
         .build();
+
+    let mut rng = RandomNumberGenerator::new();
+    for room in map.get_rooms() {
+        let (x, y) = room.center();
+        if (x, y) != (player_x, player_y) {
+            let glyph = match rng.roll_dice(1, 2) {
+                1 => glyph::monster_goblin(),
+                _ => glyph::monster_orc(),
+            };
+
+            state
+                .ecs
+                .create_entity()
+                .with(Position { x, y })
+                .with(Renderable {
+                    glyph,
+                    fg: color::monster_fg(),
+                    bg: color::bg(),
+                })
+                .with(Viewshed::with_range(8))
+                .with(Monster)
+                .build();
+        }
+    }
+
+    state.ecs.insert(map);
 
     main_loop(context, state)
 }

@@ -11,3 +11,11 @@ pub fn floor() -> FontCharType {
 pub fn wall() -> FontCharType {
     to_cp437('#')
 }
+
+pub fn monster_goblin() -> FontCharType {
+    to_cp437('g')
+}
+
+pub fn monster_orc() -> FontCharType {
+    to_cp437('o')
+}

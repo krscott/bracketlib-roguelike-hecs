@@ -26,6 +26,10 @@ pub fn floor_fog_fg() -> RGB {
     hex("#927e6a")
 }
 
+pub fn monster_fg() -> RGB {
+    hex("#9b1a0a")
+}
+
 fn hex(code: &str) -> RGB {
     RGB::from_hex(code).unwrap()
 }
