@@ -3,6 +3,7 @@ use specs::prelude::*;
 
 mod color;
 mod components;
+mod glyph;
 mod map;
 mod player;
 mod rect;
@@ -67,7 +68,7 @@ fn main() -> BError {
             y: player_y,
         })
         .with(Renderable {
-            glyph: to_cp437('@'),
+            glyph: glyph::player(),
             fg: color::player_fg(),
             bg: color::bg(),
         })

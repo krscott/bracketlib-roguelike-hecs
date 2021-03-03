@@ -2,6 +2,7 @@ use bracket_lib::prelude::*;
 use std::cmp::{max, min};
 
 use crate::color;
+use crate::glyph;
 use crate::rect::Rect;
 
 // ==================
@@ -26,13 +27,11 @@ impl TileType {
         color::bg()
     }
 
-    fn glyph(&self) -> u16 {
-        let char = match self {
-            TileType::Wall => '#',
-            TileType::Floor => '.',
-        };
-
-        to_cp437(char)
+    fn glyph(&self) -> FontCharType {
+        match self {
+            TileType::Wall => glyph::wall(),
+            TileType::Floor => glyph::floor(),
+        }
     }
 }
 
