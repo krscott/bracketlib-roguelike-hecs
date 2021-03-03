@@ -4,14 +4,16 @@ mod color;
 mod components;
 mod glyph;
 mod map;
+mod map_indexing_system;
 mod monster_ai_system;
 mod player;
 mod rect;
 mod visibility_system;
 
-use components::{Monster, Name, Player, Position, Renderable, Viewshed};
+use components::{BlocksTile, Monster, Name, Player, Position, Renderable, Viewshed};
 use hecs::World;
 use map::Map;
+use map_indexing_system::map_indexing_system;
 use monster_ai_system::monster_ai_system;
 use visibility_system::visibility_system;
 
@@ -38,8 +40,9 @@ impl State {
         let player_entity = player::query_player_entity(&self.world).unwrap();
         let map_entity = map::query_map_entity(&self.world).unwrap();
 
-        monster_ai_system(&mut self.world, player_entity, map_entity);
         visibility_system(&mut self.world, player_entity, map_entity);
+        monster_ai_system(&mut self.world, player_entity, map_entity);
+        map_indexing_system(&mut self.world, map_entity);
     }
 }
 
@@ -106,6 +109,7 @@ fn main() -> BError {
                     bg: color::bg(),
                 },
                 Viewshed::with_range(8),
+                BlocksTile,
             ));
         }
     }

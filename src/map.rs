@@ -52,6 +52,7 @@ pub struct Map {
     height: i32,
     revealed_tiles: Vec<bool>,
     visible_tiles: Vec<bool>,
+    blocked_tiles: Vec<bool>,
 }
 
 impl Map {
@@ -65,6 +66,7 @@ impl Map {
             height,
             revealed_tiles: vec![false; num_tiles],
             visible_tiles: vec![false; num_tiles],
+            blocked_tiles: vec![false; num_tiles],
         }
     }
 
@@ -150,6 +152,21 @@ impl Map {
         }
     }
 
+    pub fn set_tile_blocked(&mut self, x: i32, y: i32, is_blocked: bool) {
+        if let Some(index) = self.get_index(x, y) {
+            self.blocked_tiles[index] = is_blocked;
+        }
+    }
+
+    pub fn reset_blocked_tiles(&mut self) {
+        for (i, is_blocked) in self.blocked_tiles.iter_mut().enumerate() {
+            *is_blocked = match self.tiles[i] {
+                TileType::Wall => true,
+                TileType::Floor => false,
+            }
+        }
+    }
+
     // pub fn is_tile_revealed(&self, x: i32, y: i32) -> bool {
     //     if let Some(index) = self.get_index(x, y) {
     //         self.revealed_tiles[index]
@@ -163,6 +180,14 @@ impl Map {
             self.visible_tiles[index]
         } else {
             false
+        }
+    }
+
+    pub fn is_tile_blocked(&self, x: i32, y: i32) -> bool {
+        if let Some(index) = self.get_index(x, y) {
+            self.blocked_tiles[index]
+        } else {
+            true
         }
     }
 
@@ -186,37 +211,34 @@ impl Map {
         (x, min(y, self.height))
     }
 
+    fn apply_tile(&mut self, x: i32, y: i32, tile_type: TileType) {
+        if let Some(i) = self.get_index(x, y) {
+            self.tiles[i] = tile_type;
+        }
+    }
+
     fn apply_rect(&mut self, rect: &Rect, tile_type: TileType) {
         for y in (rect.y1 + 1)..=rect.y2 {
             for x in (rect.x1 + 1)..=rect.x2 {
-                if let Some(i) = self.get_index(x, y) {
-                    self.tiles[i] = tile_type;
-                }
+                self.apply_tile(x, y, tile_type);
             }
         }
     }
 
     fn apply_horizontal_line(&mut self, x1: i32, x2: i32, y: i32, tile_type: TileType) {
         for x in min(x1, x2)..=max(x1, x2) {
-            if let Some(i) = self.get_index(x, y) {
-                self.tiles[i] = tile_type;
-            }
+            self.apply_tile(x, y, tile_type);
         }
     }
 
     fn apply_vertical_line(&mut self, y1: i32, y2: i32, x: i32, tile_type: TileType) {
         for y in min(y1, y2)..=max(y1, y2) {
-            if let Some(i) = self.get_index(x, y) {
-                self.tiles[i] = tile_type;
-            }
+            self.apply_tile(x, y, tile_type);
         }
     }
 
     fn is_valid_exit(&self, x: i32, y: i32) -> bool {
-        match self.get_tile(x, y) {
-            Some(&TileType::Floor) => true,
-            None | Some(&TileType::Wall) => false,
-        }
+        !self.is_tile_blocked(x, y)
     }
 }
 
@@ -243,10 +265,20 @@ impl BaseMap for Map {
         (-1..=1)
             .cartesian_product(-1..=1)
             .filter(|(dx, dy)| *dx != 0 || *dy != 0)
-            .map(|(dx, dy)| (original_x + dx, original_y + dy))
-            .filter(|(x, y)| self.is_valid_exit(*x, *y))
-            .filter_map(|(x, y)| self.get_index(x, y))
-            .map(|i| (i, 1.0))
+            .map(|(dx, dy)| {
+                (
+                    original_x + dx,
+                    original_y + dy,
+                    if i32::abs(dx) == i32::abs(dy) {
+                        1.45_f32
+                    } else {
+                        1.0_f32
+                    },
+                )
+            })
+            .filter(|(x, y, _cost)| self.is_valid_exit(*x, *y))
+            .filter_map(|(x, y, cost)| self.get_index(x, y).map(|i| (i, cost)))
+            .map(|(i, cost)| (i, cost))
             .collect()
     }
 }

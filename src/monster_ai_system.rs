@@ -21,23 +21,33 @@ pub fn monster_ai_system(world: &mut World, player_entity: Entity, map_entity: E
             .visible_tiles
             .contains(&Point::new(player_pos.x, player_pos.y))
         {
-            console::log(&format!(
-                "{} shouts insults at {}",
-                monster_name, player_name.0
-            ));
-
-            let path = a_star_search(
-                map.get_index(monster_pos.x, monster_pos.y).unwrap(),
-                player_pos_index,
-                &mut *map,
+            let distance_to_player = DistanceAlg::Pythagoras.distance2d(
+                Point::new(monster_pos.x, monster_pos.y),
+                Point::new(player_pos.x, player_pos.y),
             );
+            if distance_to_player < 1.5 {
+                //TODO: Attack
 
-            if path.success {
-                if let Some(i) = path.steps.get(1) {
-                    let (next_x, next_y) = map.get_coords(*i);
-                    monster_pos.x = next_x;
-                    monster_pos.y = next_y;
-                    monster_viewshed.dirty = true;
+                console::log(&format!(
+                    "{} shouts insults at {}",
+                    monster_name, player_name.0
+                ));
+            } else {
+                let path = a_star_search(
+                    map.get_index(monster_pos.x, monster_pos.y).unwrap(),
+                    player_pos_index,
+                    &mut *map,
+                );
+
+                if path.success {
+                    if let Some(i) = path.steps.get(1) {
+                        let (next_x, next_y) = map.get_coords(*i);
+                        map.set_tile_blocked(monster_pos.x, monster_pos.y, false);
+                        monster_pos.x = next_x;
+                        monster_pos.y = next_y;
+                        monster_viewshed.dirty = true;
+                        map.set_tile_blocked(monster_pos.x, monster_pos.y, true);
+                    }
                 }
             }
         }

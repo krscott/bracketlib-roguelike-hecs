@@ -38,3 +38,6 @@ pub struct Monster;
 
 #[derive(Debug)]
 pub struct Name(pub String);
+
+#[derive(Debug)]
+pub struct BlocksTile;

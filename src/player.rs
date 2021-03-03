@@ -3,8 +3,7 @@ use hecs::{Entity, World};
 
 use crate::{
     components::{Player, Position, Viewshed},
-    map::{self, TileType},
-    RunState, State,
+    map, RunState, State,
 };
 
 /// Move the player if possible
@@ -17,17 +16,10 @@ pub fn try_move_player(delta_x: i32, delta_y: i32, world: &mut World) {
     {
         let x = pos.x + delta_x;
         let y = pos.y + delta_y;
-        if let Some(tile) = map.get_tile(x, y) {
-            match tile {
-                TileType::Wall => {
-                    // Do nothing
-                }
-                TileType::Floor => {
-                    pos.x = x;
-                    pos.y = y;
-                    viewshed.dirty = true;
-                }
-            }
+        if map.get_tile(x, y).is_some() && !map.is_tile_blocked(x, y) {
+            pos.x = x;
+            pos.y = y;
+            viewshed.dirty = true;
         }
     }
 }
