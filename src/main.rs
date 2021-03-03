@@ -6,6 +6,7 @@ mod components;
 mod consts;
 mod map;
 mod player;
+mod rect;
 
 pub struct State {
     ecs: World,
@@ -60,12 +61,16 @@ fn main() -> BError {
 
     let mut state = State::new();
 
+    let (map, rooms) = map::create_rooms_and_corridors_map();
+    state.ecs.insert(map);
+    let (player_x, player_y) = rooms[0].center();
+
     state
         .ecs
         .create_entity()
         .with(Position {
-            x: consts::PLAYER_START_X,
-            y: consts::PLAYER_START_Y,
+            x: player_x,
+            y: player_y,
         })
         .with(Renderable {
             glyph: to_cp437('@'),
@@ -74,8 +79,6 @@ fn main() -> BError {
         })
         .with(Player)
         .build();
-
-    state.ecs.insert(map::create_random_map());
 
     main_loop(context, state)
 }

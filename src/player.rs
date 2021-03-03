@@ -30,15 +30,21 @@ pub fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
 
 /// Check for player input and try to move Player entity
 pub fn player_input(state: &mut State, context: &mut BTerm) {
-    let delta_xy = match context.key {
-        Some(VirtualKeyCode::Left) => Some((-1, 0)),
-        Some(VirtualKeyCode::Right) => Some((1, 0)),
-        Some(VirtualKeyCode::Up) => Some((0, -1)),
-        Some(VirtualKeyCode::Down) => Some((0, 1)),
-        _ => None,
-    };
+    if let Some(key) = context.key {
+        let delta_xy = match key {
+            VirtualKeyCode::Left | VirtualKeyCode::Numpad4 | VirtualKeyCode::H => Some((-1, 0)),
+            VirtualKeyCode::Right | VirtualKeyCode::Numpad6 | VirtualKeyCode::L => Some((1, 0)),
+            VirtualKeyCode::Up | VirtualKeyCode::Numpad8 | VirtualKeyCode::K => Some((0, -1)),
+            VirtualKeyCode::Down | VirtualKeyCode::Numpad2 | VirtualKeyCode::J => Some((0, 1)),
+            VirtualKeyCode::Numpad7 | VirtualKeyCode::Y => Some((-1, -1)),
+            VirtualKeyCode::Numpad9 | VirtualKeyCode::U => Some((1, -1)),
+            VirtualKeyCode::Numpad1 | VirtualKeyCode::B => Some((-1, 1)),
+            VirtualKeyCode::Numpad3 | VirtualKeyCode::N => Some((1, 1)),
+            _ => None,
+        };
 
-    if let Some((dx, dy)) = delta_xy {
-        try_move_player(dx, dy, &mut state.ecs);
+        if let Some((dx, dy)) = delta_xy {
+            try_move_player(dx, dy, &mut state.ecs);
+        }
     }
 }
