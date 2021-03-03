@@ -1,6 +1,7 @@
 use bracket_lib::prelude::*;
 use specs::prelude::*;
 
+mod color;
 mod components;
 mod map;
 mod player;
@@ -47,14 +48,6 @@ impl GameState for State {
     }
 }
 
-// ==================
-// =   Functions    =
-// ==================
-
-// ==================
-// =      Main      =
-// ==================
-
 fn main() -> BError {
     let context = BTermBuilder::simple80x50()
         .with_title("Roguelike Tutorial")
@@ -75,8 +68,8 @@ fn main() -> BError {
         })
         .with(Renderable {
             glyph: to_cp437('@'),
-            fg: RGB::named(bracket_lib::color::YELLOW),
-            bg: RGB::named(bracket_lib::color::BLACK),
+            fg: color::player_fg(),
+            bg: color::bg(),
         })
         .with(Player)
         .build();

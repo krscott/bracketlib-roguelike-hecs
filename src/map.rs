@@ -1,6 +1,7 @@
 use bracket_lib::prelude::*;
 use std::cmp::{max, min};
 
+use crate::color;
 use crate::rect::Rect;
 
 // ==================
@@ -16,13 +17,13 @@ pub enum TileType {
 impl TileType {
     fn fg(&self) -> RGB {
         match self {
-            TileType::Wall => RGB::from_f32(0.0, 1.0, 0.0),
-            TileType::Floor => RGB::from_f32(0.5, 0.5, 0.5),
+            TileType::Wall => color::wall_fg(),
+            TileType::Floor => color::floor_fg(),
         }
     }
 
     fn bg(&self) -> RGB {
-        RGB::from_f32(0.0, 0.0, 0.0)
+        color::bg()
     }
 
     fn glyph(&self) -> u16 {
