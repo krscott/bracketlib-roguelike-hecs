@@ -11,7 +11,7 @@ mod player;
 mod rect;
 mod visibility_system;
 
-use components::{Monster, Player, Position, Renderable, Viewshed};
+use components::{Monster, Name, Player, Position, Renderable, Viewshed};
 use map::Map;
 use visibility_system::VisibilitySystem;
 
@@ -34,6 +34,7 @@ impl State {
         ecs.register::<Player>();
         ecs.register::<Viewshed>();
         ecs.register::<Monster>();
+        ecs.register::<Name>();
 
         let runstate = RunState::Running;
 
@@ -100,15 +101,16 @@ fn main() -> BError {
         })
         .with(Player)
         .with(Viewshed::with_range(8))
+        .with(Name("Player".into()))
         .build();
 
     let mut rng = RandomNumberGenerator::new();
-    for room in map.get_rooms() {
+    for (i, room) in map.get_rooms().iter().enumerate() {
         let (x, y) = room.center();
         if (x, y) != (player_x, player_y) {
-            let glyph = match rng.roll_dice(1, 2) {
-                1 => glyph::monster_goblin(),
-                _ => glyph::monster_orc(),
+            let (glyph, name) = match rng.roll_dice(1, 2) {
+                1 => (glyph::monster_goblin(), "Goblin"),
+                _ => (glyph::monster_orc(), "Orc"),
             };
 
             state
@@ -122,6 +124,7 @@ fn main() -> BError {
                 })
                 .with(Viewshed::with_range(8))
                 .with(Monster)
+                .with(Name(format!("{} #{}", name, i)))
                 .build();
         }
     }
