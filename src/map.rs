@@ -1,10 +1,13 @@
 use bracket_lib::prelude::*;
-use specs::World;
+use hecs::{Entity, World};
 use std::cmp::{max, min};
 
-use crate::color;
 use crate::glyph;
 use crate::rect::Rect;
+use crate::{
+    color,
+    components::{Position, Renderable},
+};
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum TileType {
@@ -227,14 +230,33 @@ impl Algorithm2D for Map {
     }
 }
 
-pub fn draw_map(ecs: &World, context: &mut BTerm) {
-    let map = ecs.fetch::<Map>();
+pub fn query_map_entity(world: &World) -> Option<Entity> {
+    world
+        .query::<&Map>()
+        .into_iter()
+        .next()
+        .map(|(entity, _)| entity)
+}
+
+pub fn query_map(world: &World) -> Option<hecs::Ref<Map>> {
+    let map_entity = query_map_entity(world)?;
+    world.get::<Map>(map_entity).ok()
+}
+
+pub fn draw_map(world: &World, context: &mut BTerm) {
+    let map = query_map(world).unwrap();
 
     for (i, tile) in map.tiles.iter().enumerate() {
         if map.revealed_tiles[i] {
             let (x, y) = map.get_coords(i);
             let is_vis = map.visible_tiles[i];
             context.set(x, y, tile.fg(is_vis), tile.bg(is_vis), tile.glyph());
+        }
+    }
+
+    for (_, (pos, render)) in world.query::<(&Position, &Renderable)>().into_iter() {
+        if map.is_tile_visible(pos.x, pos.y) {
+            context.set(pos.x, pos.y, render.fg, render.bg, render.glyph);
         }
     }
 }

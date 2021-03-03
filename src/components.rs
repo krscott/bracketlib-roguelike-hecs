@@ -1,24 +1,22 @@
 use bracket_lib::prelude::*;
-use specs::prelude::*;
-use specs_derive::Component;
 
-#[derive(Component)]
+#[derive(Debug)]
 pub struct Position {
     pub x: i32,
     pub y: i32,
 }
 
-#[derive(Component)]
+#[derive(Debug)]
 pub struct Renderable {
     pub glyph: FontCharType,
     pub fg: RGB,
     pub bg: RGB,
 }
 
-#[derive(Component, Debug)]
+#[derive(Debug)]
 pub struct Player;
 
-#[derive(Component)]
+#[derive(Debug)]
 pub struct Viewshed {
     pub visible_tiles: Vec<Point>,
     pub range: i32,
@@ -35,8 +33,8 @@ impl Viewshed {
     }
 }
 
-#[derive(Component)]
+#[derive(Debug)]
 pub struct Monster;
 
-#[derive(Component)]
+#[derive(Debug)]
 pub struct Name(pub String);

@@ -1,6 +1,4 @@
 use bracket_lib::prelude::*;
-use monster_ai_system::MonsterAi;
-use specs::prelude::*;
 
 mod color;
 mod components;
@@ -12,8 +10,10 @@ mod rect;
 mod visibility_system;
 
 use components::{Monster, Name, Player, Position, Renderable, Viewshed};
+use hecs::World;
 use map::Map;
-use visibility_system::VisibilitySystem;
+use monster_ai_system::monster_ai_system;
+use visibility_system::visibility_system;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum RunState {
@@ -22,30 +22,21 @@ pub enum RunState {
 }
 
 pub struct State {
-    pub ecs: World,
+    pub world: World,
     pub runstate: RunState,
 }
 
 impl State {
     fn new() -> Self {
-        let mut ecs = World::new();
-        ecs.register::<Position>();
-        ecs.register::<Renderable>();
-        ecs.register::<Player>();
-        ecs.register::<Viewshed>();
-        ecs.register::<Monster>();
-        ecs.register::<Name>();
-
+        let world = World::new();
         let runstate = RunState::Running;
 
-        Self { ecs, runstate }
+        Self { world, runstate }
     }
 
     fn run_systems(&mut self) {
-        VisibilitySystem.run_now(&self.ecs);
-        MonsterAi.run_now(&self.ecs);
-
-        self.ecs.maintain();
+        monster_ai_system(&mut self.world);
+        visibility_system(&mut self.world);
     }
 }
 
@@ -61,19 +52,9 @@ impl GameState for State {
             }
         }
 
-        let positions = self.ecs.read_storage::<Position>();
-        let renderables = self.ecs.read_storage::<Renderable>();
-        let map = self.ecs.fetch::<Map>();
-
         context.cls_bg(color::bg());
 
-        map::draw_map(&self.ecs, context);
-
-        for (pos, render) in (&positions, &renderables).join() {
-            if map.is_tile_visible(pos.x, pos.y) {
-                context.set(pos.x, pos.y, render.fg, render.bg, render.glyph);
-            }
-        }
+        map::draw_map(&self.world, context);
     }
 }
 
@@ -87,24 +68,23 @@ fn main() -> BError {
     let map = Map::rooms_and_cooridors(80, 50);
     let (player_x, player_y) = map.get_player_starting_position();
 
-    state
-        .ecs
-        .create_entity()
-        .with(Position {
+    state.world.spawn((
+        Player,
+        Name("Player".into()),
+        Position {
             x: player_x,
             y: player_y,
-        })
-        .with(Renderable {
+        },
+        Renderable {
             glyph: glyph::player(),
             fg: color::player_fg(),
             bg: color::bg(),
-        })
-        .with(Player)
-        .with(Viewshed::with_range(8))
-        .with(Name("Player".into()))
-        .build();
+        },
+        Viewshed::with_range(8),
+    ));
 
     let mut rng = RandomNumberGenerator::new();
+    let mut to_spawn = Vec::new();
     for (i, room) in map.get_rooms().iter().enumerate() {
         let (x, y) = room.center();
         if (x, y) != (player_x, player_y) {
@@ -113,23 +93,22 @@ fn main() -> BError {
                 _ => (glyph::monster_orc(), "Orc"),
             };
 
-            state
-                .ecs
-                .create_entity()
-                .with(Position { x, y })
-                .with(Renderable {
+            to_spawn.push((
+                Monster,
+                Name(format!("{} #{}", name, i)),
+                Position { x, y },
+                Renderable {
                     glyph,
                     fg: color::monster_fg(),
                     bg: color::bg(),
-                })
-                .with(Viewshed::with_range(8))
-                .with(Monster)
-                .with(Name(format!("{} #{}", name, i)))
-                .build();
+                },
+                Viewshed::with_range(8),
+            ));
         }
     }
+    state.world.spawn_batch(to_spawn);
 
-    state.ecs.insert(map);
+    state.world.spawn((map,));
 
     main_loop(context, state)
 }

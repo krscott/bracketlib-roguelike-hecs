@@ -1,20 +1,20 @@
 use bracket_lib::prelude::*;
-use specs::{prelude::*, WorldExt};
+use hecs::{Entity, World};
 
 use crate::{
     components::{Player, Position, Viewshed},
-    map::{Map, TileType},
+    map::{self, TileType},
     RunState, State,
 };
 
 /// Move the player if possible
-pub fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
-    let mut positions = ecs.write_storage::<Position>();
-    let mut players = ecs.write_storage::<Player>();
-    let mut viewsheds = ecs.write_storage::<Viewshed>();
-    let map = ecs.fetch::<Map>();
+pub fn try_move_player(delta_x: i32, delta_y: i32, world: &mut World) {
+    let map = map::query_map(world).unwrap();
 
-    for (_player, pos, viewshed) in (&mut players, &mut positions, &mut viewsheds).join() {
+    for (_, (_player, pos, viewshed)) in world
+        .query::<(&Player, &mut Position, &mut Viewshed)>()
+        .into_iter()
+    {
         let x = pos.x + delta_x;
         let y = pos.y + delta_y;
         if let Some(tile) = map.get_tile(x, y) {
@@ -49,7 +49,7 @@ pub fn player_input(state: &mut State, context: &mut BTerm) -> RunState {
         };
 
         if let Some((dx, dy)) = delta_xy {
-            try_move_player(dx, dy, &mut state.ecs);
+            try_move_player(dx, dy, &mut state.world);
             RunState::Running
         } else {
             RunState::Paused
@@ -57,4 +57,12 @@ pub fn player_input(state: &mut State, context: &mut BTerm) -> RunState {
     } else {
         RunState::Paused
     }
+}
+
+pub fn query_player_entity(world: &World) -> Option<Entity> {
+    world
+        .query::<&Player>()
+        .into_iter()
+        .next()
+        .map(|(entity, _)| entity)
 }
