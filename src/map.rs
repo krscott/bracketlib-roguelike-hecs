@@ -1,13 +1,10 @@
 use bracket_lib::prelude::*;
+use specs::World;
 use std::cmp::{max, min};
 
 use crate::color;
 use crate::glyph;
 use crate::rect::Rect;
-
-// ==================
-// =     Types      =
-// ==================
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum TileType {
@@ -16,14 +13,16 @@ pub enum TileType {
 }
 
 impl TileType {
-    fn fg(&self) -> RGB {
-        match self {
-            TileType::Wall => color::wall_fg(),
-            TileType::Floor => color::floor_fg(),
+    fn fg(&self, is_visible: bool) -> RGB {
+        match (self, is_visible) {
+            (TileType::Wall, true) => color::wall_fg(),
+            (TileType::Wall, false) => color::wall_fog_fg(),
+            (TileType::Floor, true) => color::floor_fg(),
+            (TileType::Floor, false) => color::floor_fog_fg(),
         }
     }
 
-    fn bg(&self) -> RGB {
+    fn bg(&self, _is_visible: bool) -> RGB {
         color::bg()
     }
 
@@ -33,6 +32,13 @@ impl TileType {
             TileType::Floor => glyph::floor(),
         }
     }
+
+    fn is_opaque(&self) -> bool {
+        match self {
+            TileType::Wall => true,
+            TileType::Floor => false,
+        }
+    }
 }
 
 pub struct Map {
@@ -40,15 +46,21 @@ pub struct Map {
     rooms: Vec<Rect>,
     width: i32,
     height: i32,
+    revealed_tiles: Vec<bool>,
+    visible_tiles: Vec<bool>,
 }
 
 impl Map {
     fn blank(width: i32, height: i32, tile_type: TileType) -> Self {
+        let num_tiles = width as usize * height as usize;
+
         Self {
-            tiles: vec![tile_type; width as usize * height as usize],
+            tiles: vec![tile_type; num_tiles],
             rooms: Vec::new(),
             width,
             height,
+            revealed_tiles: vec![false; num_tiles],
+            visible_tiles: vec![false; num_tiles],
         }
     }
 
@@ -93,6 +105,14 @@ impl Map {
         map
     }
 
+    pub fn get_width(&self) -> i32 {
+        self.width
+    }
+
+    pub fn get_height(&self) -> i32 {
+        self.height
+    }
+
     pub fn get_player_starting_position(&self) -> (i32, i32) {
         match self.rooms.first() {
             Some(room) => room.center(),
@@ -100,24 +120,26 @@ impl Map {
         }
     }
 
-    // pub fn get_tiles(&self) -> &[TileType] {
-    //     &self.tiles
-    // }
-
-    // pub fn get_rooms(&self) -> &[Rect] {
-    //     &self.rooms
-    // }
-
-    // pub fn get_width(&self) -> i32 {
-    //     self.width
-    // }
-
-    // pub fn get_height(&self) -> i32 {
-    //     self.height
-    // }
-
     pub fn get_tile(&self, x: i32, y: i32) -> Option<&TileType> {
         self.get_index(x, y).and_then(|index| self.tiles.get(index))
+    }
+
+    pub fn set_tile_revealed(&mut self, x: i32, y: i32) {
+        if let Some(index) = self.get_index(x, y) {
+            self.revealed_tiles[index] = true;
+        }
+    }
+
+    pub fn set_tile_visible(&mut self, x: i32, y: i32) {
+        if let Some(index) = self.get_index(x, y) {
+            self.visible_tiles[index] = true;
+        }
+    }
+
+    pub fn clear_visible_tiles(&mut self) {
+        for x in self.visible_tiles.iter_mut() {
+            *x = false;
+        }
     }
 
     fn get_index(&self, x: i32, y: i32) -> Option<usize> {
@@ -165,11 +187,34 @@ impl Map {
             }
         }
     }
+}
 
-    pub fn draw_to_context(&self, context: &mut BTerm) {
-        for (i, tile) in self.tiles.iter().enumerate() {
-            let (x, y) = self.get_coords(i);
-            context.set(x, y, tile.fg(), tile.bg(), tile.glyph())
+impl BaseMap for Map {
+    fn is_opaque(&self, index: usize) -> bool {
+        if let Some(tile) = self.tiles.get(index) {
+            tile.is_opaque()
+        } else {
+            // Tile is out of bounds
+            assert!(false);
+            true
+        }
+    }
+}
+
+impl Algorithm2D for Map {
+    fn dimensions(&self) -> Point {
+        Point::new(self.width, self.height)
+    }
+}
+
+pub fn draw_map(ecs: &World, context: &mut BTerm) {
+    let map = ecs.fetch::<Map>();
+
+    for (i, tile) in map.tiles.iter().enumerate() {
+        if map.revealed_tiles[i] {
+            let (x, y) = map.get_coords(i);
+            let is_vis = map.visible_tiles[i];
+            context.set(x, y, tile.fg(is_vis), tile.bg(is_vis), tile.glyph());
         }
     }
 }

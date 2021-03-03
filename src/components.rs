@@ -17,3 +17,20 @@ pub struct Renderable {
 
 #[derive(Component, Debug)]
 pub struct Player;
+
+#[derive(Component)]
+pub struct Viewshed {
+    pub visible_tiles: Vec<Point>,
+    pub range: i32,
+    pub dirty: bool,
+}
+
+impl Viewshed {
+    pub fn with_range(range: i32) -> Self {
+        Self {
+            visible_tiles: Vec::new(),
+            range,
+            dirty: true,
+        }
+    }
+}

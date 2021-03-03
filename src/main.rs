@@ -7,9 +7,11 @@ mod glyph;
 mod map;
 mod player;
 mod rect;
+mod visibility_system;
 
-use components::{Player, Position, Renderable};
+use components::{Player, Position, Renderable, Viewshed};
 use map::Map;
+use visibility_system::VisibilitySystem;
 
 pub struct State {
     ecs: World,
@@ -21,11 +23,14 @@ impl State {
         ecs.register::<Position>();
         ecs.register::<Renderable>();
         ecs.register::<Player>();
+        ecs.register::<Viewshed>();
 
         Self { ecs }
     }
 
     fn run_systems(&mut self) {
+        VisibilitySystem.run_now(&self.ecs);
+
         self.ecs.maintain();
     }
 }
@@ -37,11 +42,11 @@ impl GameState for State {
 
         let positions = self.ecs.read_storage::<Position>();
         let renderables = self.ecs.read_storage::<Renderable>();
-        let map = self.ecs.fetch::<Map>();
+        // let map = self.ecs.fetch::<Map>();
 
-        context.cls();
+        context.cls_bg(color::bg());
 
-        map.draw_to_context(context);
+        map::draw_map(&self.ecs, context);
 
         for (pos, render) in (&positions, &renderables).join() {
             context.set(pos.x, pos.y, render.fg, render.bg, render.glyph);
@@ -73,6 +78,7 @@ fn main() -> BError {
             bg: color::bg(),
         })
         .with(Player)
+        .with(Viewshed::with_range(8))
         .build();
 
     main_loop(context, state)
