@@ -1,12 +1,13 @@
 use bracket_lib::prelude::*;
-use components::{Player, Position, Renderable};
 use specs::prelude::*;
 
 mod components;
-mod consts;
 mod map;
 mod player;
 mod rect;
+
+use components::{Player, Position, Renderable};
+use map::Map;
 
 pub struct State {
     ecs: World,
@@ -34,11 +35,11 @@ impl GameState for State {
 
         let positions = self.ecs.read_storage::<Position>();
         let renderables = self.ecs.read_storage::<Renderable>();
-        let map = self.ecs.fetch::<map::GameMap>();
+        let map = self.ecs.fetch::<Map>();
 
         context.cls();
 
-        map::draw_map(&map, context);
+        map.draw_to_context(context);
 
         for (pos, render) in (&positions, &renderables).join() {
             context.set(pos.x, pos.y, render.fg, render.bg, render.glyph);
@@ -61,9 +62,9 @@ fn main() -> BError {
 
     let mut state = State::new();
 
-    let (map, rooms) = map::create_rooms_and_corridors_map();
+    let map = Map::rooms_and_cooridors(80, 50);
+    let (player_x, player_y) = map.get_player_starting_position();
     state.ecs.insert(map);
-    let (player_x, player_y) = rooms[0].center();
 
     state
         .ecs
