@@ -10,3 +10,4 @@ edition = "2018"
 # bracket-lib = "0.8.2"
 bracket-lib = { git = "https://github.com/amethyst/bracket-lib", rev = "927d2292b5e74dd6ef16b46bc9e40c815c36c8a0" }
 hecs = "0.3.2"
+itertools = "0.10.0"

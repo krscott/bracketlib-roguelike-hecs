@@ -38,7 +38,7 @@ impl State {
         let player_entity = player::query_player_entity(&self.world).unwrap();
         let map_entity = map::query_map_entity(&self.world).unwrap();
 
-        monster_ai_system(&mut self.world, player_entity);
+        monster_ai_system(&mut self.world, player_entity, map_entity);
         visibility_system(&mut self.world, player_entity, map_entity);
     }
 }

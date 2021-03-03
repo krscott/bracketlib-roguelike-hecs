@@ -1,5 +1,6 @@
 use bracket_lib::prelude::*;
 use hecs::{Entity, World};
+use itertools::Itertools;
 use std::cmp::{max, min};
 
 use crate::glyph;
@@ -165,7 +166,7 @@ impl Map {
         }
     }
 
-    fn get_index(&self, x: i32, y: i32) -> Option<usize> {
+    pub fn get_index(&self, x: i32, y: i32) -> Option<usize> {
         if x < 0 || x >= self.width || y < 0 || y >= self.height {
             return None;
         }
@@ -177,7 +178,7 @@ impl Map {
         Some(index)
     }
 
-    fn get_coords(&self, index: usize) -> (i32, i32) {
+    pub fn get_coords(&self, index: usize) -> (i32, i32) {
         assert!(index < self.tiles.len());
 
         let x = (index % self.width as usize) as i32;
@@ -210,6 +211,13 @@ impl Map {
             }
         }
     }
+
+    fn is_valid_exit(&self, x: i32, y: i32) -> bool {
+        match self.get_tile(x, y) {
+            Some(&TileType::Floor) => true,
+            None | Some(&TileType::Wall) => false,
+        }
+    }
 }
 
 impl BaseMap for Map {
@@ -221,6 +229,25 @@ impl BaseMap for Map {
             assert!(false);
             true
         }
+    }
+
+    fn get_pathing_distance(&self, index1: usize, index2: usize) -> f32 {
+        let p1 = Point::from_tuple(self.get_coords(index1));
+        let p2 = Point::from_tuple(self.get_coords(index2));
+        DistanceAlg::Pythagoras.distance2d(p1, p2)
+    }
+
+    fn get_available_exits(&self, index: usize) -> SmallVec<[(usize, f32); 10]> {
+        let (original_x, original_y) = self.get_coords(index);
+
+        (-1..=1)
+            .cartesian_product(-1..=1)
+            .filter(|(dx, dy)| *dx != 0 || *dy != 0)
+            .map(|(dx, dy)| (original_x + dx, original_y + dy))
+            .filter(|(x, y)| self.is_valid_exit(*x, *y))
+            .filter_map(|(x, y)| self.get_index(x, y))
+            .map(|i| (i, 1.0))
+            .collect()
     }
 }
 
