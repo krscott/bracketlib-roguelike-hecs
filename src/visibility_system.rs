@@ -1,16 +1,12 @@
 use bracket_lib::prelude::{field_of_view, Point};
-use hecs::World;
+use hecs::{Entity, World};
 
 use crate::{
     components::{Position, Viewshed},
-    map::{self, Map},
-    player,
+    map::Map,
 };
 
-pub fn visibility_system(world: &mut World) {
-    let player_entity = player::query_player_entity(world).unwrap();
-    let map_entity = map::query_map_entity(world).unwrap();
-
+pub fn visibility_system(world: &mut World, player_entity: Entity, map_entity: Entity) {
     for (entity, (viewshed, pos)) in world.query::<(&mut Viewshed, &Position)>().into_iter() {
         if viewshed.dirty {
             let mut map = world.get_mut::<Map>(map_entity).unwrap();

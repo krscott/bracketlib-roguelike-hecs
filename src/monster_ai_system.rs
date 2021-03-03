@@ -1,13 +1,10 @@
 use bracket_lib::prelude::*;
-use hecs::World;
+use hecs::{Entity, World};
 
-use crate::{
-    components::{Monster, Name, Position, Viewshed},
-    player,
-};
+use crate::components::{Monster, Name, Position, Viewshed};
 
-pub fn monster_ai_system(world: &mut World) {
-    let player_entity = player::query_player_entity(world).unwrap();
+pub fn monster_ai_system(world: &mut World, player_entity: Entity) {
+    // let player_entity = player::query_player_entity(world).unwrap();
     let player_pos = world.get::<Position>(player_entity).unwrap();
     let player_name = world.get::<Name>(player_entity).unwrap();
 
