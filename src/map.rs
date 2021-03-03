@@ -1,7 +1,10 @@
 use bracket_lib::prelude::*;
 use hecs::{Entity, World};
 use itertools::Itertools;
-use std::cmp::{max, min};
+use std::{
+    cmp::{max, min},
+    vec,
+};
 
 use crate::glyph;
 use crate::rect::Rect;
@@ -9,6 +12,8 @@ use crate::{
     color,
     components::{Position, Renderable},
 };
+
+const EMPTY_ENTITY_ARRAY: &'static [Entity] = &[];
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum TileType {
@@ -53,6 +58,7 @@ pub struct Map {
     revealed_tiles: Vec<bool>,
     visible_tiles: Vec<bool>,
     blocked_tiles: Vec<bool>,
+    tile_content: Vec<Vec<Entity>>,
 }
 
 impl Map {
@@ -67,6 +73,7 @@ impl Map {
             revealed_tiles: vec![false; num_tiles],
             visible_tiles: vec![false; num_tiles],
             blocked_tiles: vec![false; num_tiles],
+            tile_content: vec![Vec::new(); num_tiles],
         }
     }
 
@@ -164,6 +171,26 @@ impl Map {
                 TileType::Wall => true,
                 TileType::Floor => false,
             }
+        }
+    }
+
+    pub fn get_entities_on_tile(&self, x: i32, y: i32) -> &[Entity] {
+        if let Some(index) = self.get_index(x, y) {
+            &self.tile_content[index]
+        } else {
+            EMPTY_ENTITY_ARRAY
+        }
+    }
+
+    pub fn add_entity_to_tile_content(&mut self, x: i32, y: i32, entity: Entity) {
+        if let Some(index) = self.get_index(x, y) {
+            self.tile_content[index].push(entity);
+        }
+    }
+
+    pub fn clear_content_index(&mut self) {
+        for content in self.tile_content.iter_mut() {
+            content.clear();
         }
     }
 
@@ -289,21 +316,8 @@ impl Algorithm2D for Map {
     }
 }
 
-pub fn query_map_entity(world: &World) -> Option<Entity> {
-    world
-        .query::<&Map>()
-        .into_iter()
-        .next()
-        .map(|(entity, _)| entity)
-}
-
-pub fn query_map(world: &World) -> Option<hecs::Ref<Map>> {
-    let map_entity = query_map_entity(world)?;
-    world.get::<Map>(map_entity).ok()
-}
-
-pub fn draw_map(world: &World, context: &mut BTerm) {
-    let map = query_map(world).unwrap();
+pub fn draw_map(context: &mut BTerm, world: &World, map_entity: Entity) {
+    let map = world.get::<Map>(map_entity).unwrap();
 
     for (i, tile) in map.tiles.iter().enumerate() {
         if map.revealed_tiles[i] {

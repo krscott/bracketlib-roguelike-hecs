@@ -19,12 +19,10 @@ pub fn monster_ai_system(world: &mut World, player_entity: Entity, map_entity: E
     {
         if monster_viewshed
             .visible_tiles
-            .contains(&Point::new(player_pos.x, player_pos.y))
+            .contains(&player_pos.to_point())
         {
-            let distance_to_player = DistanceAlg::Pythagoras.distance2d(
-                Point::new(monster_pos.x, monster_pos.y),
-                Point::new(player_pos.x, player_pos.y),
-            );
+            let distance_to_player =
+                DistanceAlg::Pythagoras.distance2d(monster_pos.to_point(), player_pos.to_point());
             if distance_to_player < 1.5 {
                 //TODO: Attack
 

@@ -2,18 +2,22 @@ use bracket_lib::prelude::*;
 
 mod color;
 mod components;
+mod damage_system;
 mod glyph;
 mod map;
 mod map_indexing_system;
+mod melee_combat_system;
 mod monster_ai_system;
 mod player;
 mod rect;
 mod visibility_system;
 
-use components::{BlocksTile, Monster, Name, Player, Position, Renderable, Viewshed};
-use hecs::World;
+use components::{BlocksTile, CombatStats, Monster, Name, Player, Position, Renderable, Viewshed};
+use damage_system::{damage_system, delete_the_dead};
+use hecs::{Entity, World};
 use map::Map;
 use map_indexing_system::map_indexing_system;
+use melee_combat_system::melee_combat_system;
 use monster_ai_system::monster_ai_system;
 use visibility_system::visibility_system;
 
@@ -26,23 +30,30 @@ pub enum RunState {
 pub struct State {
     pub world: World,
     pub runstate: RunState,
+    pub player_entity: Entity,
+    pub map_entity: Entity,
 }
 
 impl State {
-    fn new() -> Self {
-        let world = World::new();
+    fn new(world: World, player_entity: Entity, map_entity: Entity) -> Self {
         let runstate = RunState::Running;
 
-        Self { world, runstate }
+        Self {
+            world,
+            runstate,
+            player_entity,
+            map_entity,
+        }
     }
 
     fn run_systems(&mut self) {
-        let player_entity = player::query_player_entity(&self.world).unwrap();
-        let map_entity = map::query_map_entity(&self.world).unwrap();
+        visibility_system(&mut self.world, self.player_entity, self.map_entity);
+        monster_ai_system(&mut self.world, self.player_entity, self.map_entity);
+        melee_combat_system(&mut self.world);
+        damage_system(&mut self.world);
 
-        visibility_system(&mut self.world, player_entity, map_entity);
-        monster_ai_system(&mut self.world, player_entity, map_entity);
-        map_indexing_system(&mut self.world, map_entity);
+        delete_the_dead(&mut self.world);
+        map_indexing_system(&mut self.world, self.map_entity);
     }
 }
 
@@ -50,7 +61,8 @@ impl GameState for State {
     fn tick(&mut self, context: &mut BTerm) {
         match self.runstate {
             RunState::Paused => {
-                self.runstate = player::player_input(self, context);
+                self.runstate =
+                    player::player_input(self, context, self.player_entity, self.map_entity);
             }
             RunState::Running => {
                 self.run_systems();
@@ -60,7 +72,7 @@ impl GameState for State {
 
         context.cls_bg(color::bg());
 
-        map::draw_map(&self.world, context);
+        map::draw_map(context, &self.world, self.map_entity);
     }
 }
 
@@ -69,12 +81,12 @@ fn main() -> BError {
         .with_title("Roguelike Tutorial")
         .build()?;
 
-    let mut state = State::new();
+    let mut world = World::new();
 
     let map = Map::rooms_and_cooridors(80, 50);
     let (player_x, player_y) = map.get_player_starting_position();
 
-    state.world.spawn((
+    let player_entity = world.spawn((
         Player,
         Name("Player".into()),
         Position {
@@ -87,6 +99,12 @@ fn main() -> BError {
             bg: color::bg(),
         },
         Viewshed::with_range(8),
+        CombatStats {
+            max_hp: 30,
+            hp: 30,
+            defense: 2,
+            power: 5,
+        },
     ));
 
     let mut rng = RandomNumberGenerator::new();
@@ -110,12 +128,20 @@ fn main() -> BError {
                 },
                 Viewshed::with_range(8),
                 BlocksTile,
+                CombatStats {
+                    max_hp: 16,
+                    hp: 16,
+                    defense: 1,
+                    power: 4,
+                },
             ));
         }
     }
-    state.world.spawn_batch(to_spawn);
+    world.spawn_batch(to_spawn);
 
-    state.world.spawn((map,));
+    let map_entity = world.spawn((map,));
+
+    let state = State::new(world, player_entity, map_entity);
 
     main_loop(context, state)
 }

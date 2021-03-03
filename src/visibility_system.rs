@@ -1,4 +1,4 @@
-use bracket_lib::prelude::{field_of_view, Point};
+use bracket_lib::prelude::field_of_view;
 use hecs::{Entity, World};
 
 use crate::{
@@ -12,7 +12,7 @@ pub fn visibility_system(world: &mut World, player_entity: Entity, map_entity: E
             let mut map = world.get_mut::<Map>(map_entity).unwrap();
             viewshed.dirty = false;
             viewshed.visible_tiles.clear();
-            viewshed.visible_tiles = field_of_view(Point::new(pos.x, pos.y), viewshed.range, &*map);
+            viewshed.visible_tiles = field_of_view(pos.to_point(), viewshed.range, &*map);
             viewshed.visible_tiles.retain(|p| {
                 p.x >= 0 && p.x < map.get_width() && p.y >= 0 && p.y < map.get_height()
             });
