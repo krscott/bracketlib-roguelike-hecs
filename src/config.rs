@@ -11,10 +11,17 @@ pub fn default_user_config() -> UserConfig {
     UserConfig {
         default_fg: "#c5ccb8".into(),
         default_fog_fg: "#9a9a97".into(),
-        default_bg: "#433455".into(),
+        default_bg: "#0c0c0c".into(),
         default_fog_bg: "#0c0c0c".into(),
-        ui_fg: None,
-        ui_bg: None,
+        ui: None,
+        ui_hp: Some(TextUserConfig {
+            fg: "#be955c".into(),
+            bg: None,
+        }),
+        ui_hp_bar: Some(TextUserConfig {
+            fg: "#9a4f50".into(),
+            bg: None,
+        }),
         player: TileUserConfig {
             glyph: '@',
             fg: Some("#c28d75".into()),
@@ -72,14 +79,21 @@ pub struct TileUserConfig {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct TextUserConfig {
+    pub fg: String,
+    pub bg: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct UserConfig {
     pub default_fg: String,
     pub default_fog_fg: String,
     pub default_bg: String,
     pub default_fog_bg: String,
 
-    pub ui_fg: Option<String>,
-    pub ui_bg: Option<String>,
+    pub ui: Option<TextUserConfig>,
+    pub ui_hp: Option<TextUserConfig>,
+    pub ui_hp_bar: Option<TextUserConfig>,
 
     pub player: TileUserConfig,
     pub wall: TileUserConfig,
@@ -131,10 +145,36 @@ impl From<TileConfig> for Renderable {
 }
 
 #[derive(Debug, Clone)]
+pub struct TextConfig {
+    pub fg: RGB,
+    pub bg: RGB,
+}
+
+impl TextConfig {
+    fn try_from_option_user_config(
+        value: Option<TextUserConfig>,
+        defaults: &TextConfig,
+    ) -> Result<Self, ConfigParseError> {
+        match value {
+            Some(value) => {
+                let TextUserConfig { fg, bg } = value;
+
+                Ok(TextConfig {
+                    fg: parse_color_code(fg)?,
+                    bg: parse_color_code_option(bg, defaults.bg)?,
+                })
+            }
+            None => Ok(defaults.clone()),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct Config {
     pub bg: RGB,
-    pub ui_fg: RGB,
-    pub ui_bg: RGB,
+    pub ui: TextConfig,
+    pub ui_hp: TextConfig,
+    pub ui_hp_bar: TextConfig,
     pub player: TileConfig,
     pub wall: TileConfig,
     pub floor: TileConfig,
@@ -151,8 +191,9 @@ impl TryFrom<UserConfig> for Config {
             default_fog_fg,
             default_bg,
             default_fog_bg,
-            ui_fg,
-            ui_bg,
+            ui,
+            ui_hp,
+            ui_hp_bar,
             player,
             wall,
             floor,
@@ -160,7 +201,7 @@ impl TryFrom<UserConfig> for Config {
             goblin,
         } = value;
 
-        let defaults = TileConfig {
+        let tile_defaults = TileConfig {
             glyph: 0,
             fg: parse_color_code(default_fg)?,
             fog_fg: parse_color_code(default_fog_fg)?,
@@ -168,15 +209,21 @@ impl TryFrom<UserConfig> for Config {
             fog_bg: parse_color_code(default_fog_bg)?,
         };
 
+        let text_defaults = TextConfig {
+            fg: tile_defaults.fg,
+            bg: tile_defaults.bg,
+        };
+
         Ok(Config {
-            bg: defaults.bg,
-            ui_fg: parse_color_code_option(ui_fg, defaults.fg)?,
-            ui_bg: parse_color_code_option(ui_bg, defaults.bg)?,
-            player: TileConfig::try_from_user_config(player, &defaults)?,
-            wall: TileConfig::try_from_user_config(wall, &defaults)?,
-            floor: TileConfig::try_from_user_config(floor, &defaults)?,
-            orc: TileConfig::try_from_user_config(orc, &defaults)?,
-            goblin: TileConfig::try_from_user_config(goblin, &defaults)?,
+            bg: tile_defaults.bg,
+            ui: TextConfig::try_from_option_user_config(ui, &text_defaults)?,
+            ui_hp: TextConfig::try_from_option_user_config(ui_hp, &text_defaults)?,
+            ui_hp_bar: TextConfig::try_from_option_user_config(ui_hp_bar, &text_defaults)?,
+            player: TileConfig::try_from_user_config(player, &tile_defaults)?,
+            wall: TileConfig::try_from_user_config(wall, &tile_defaults)?,
+            floor: TileConfig::try_from_user_config(floor, &tile_defaults)?,
+            orc: TileConfig::try_from_user_config(orc, &tile_defaults)?,
+            goblin: TileConfig::try_from_user_config(goblin, &tile_defaults)?,
         })
     }
 }

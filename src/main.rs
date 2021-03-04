@@ -6,6 +6,7 @@ mod components;
 mod config;
 mod damage_system;
 mod despawn_entities_system;
+mod gamelog;
 mod gui;
 mod map;
 mod map_indexing_system;
@@ -20,6 +21,7 @@ use components::{BlocksTile, CombatStats, Monster, Name, Player, Position, Rende
 use config::Config;
 use damage_system::damage_system;
 use despawn_entities_system::despawn_entities_system;
+use gamelog::GameLog;
 use hecs::{Entity, World};
 use map::Map;
 use map_indexing_system::map_indexing_system;
@@ -180,6 +182,12 @@ fn main() -> BError {
     let map_entity = world.spawn((map,));
 
     let run_state_entity = world.spawn((RunState::PreRun,));
+
+    {
+        let mut gamelog = GameLog::new();
+        gamelog.push("Welcome to the Rusty-hecs Roguelike");
+        world.spawn((gamelog,));
+    }
 
     let state = State {
         world,

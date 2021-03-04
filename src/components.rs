@@ -66,7 +66,7 @@ impl Display for Name {
 #[derive(Debug)]
 pub struct BlocksTile;
 
-#[derive(Debug)]
+#[derive(Debug, Default, Clone, Copy)]
 pub struct CombatStats {
     pub max_hp: i32,
     pub hp: i32,
