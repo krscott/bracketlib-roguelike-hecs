@@ -2,14 +2,15 @@ use bracket_lib::prelude::*;
 use hecs::{Entity, World};
 
 use crate::{
-    components::{CombatStats, Player, Position, Viewshed, WantsToMelee},
+    command::command_bundle,
+    components::{CombatStats, InitiateAttackCommand, Player, Position, Viewshed},
     map::Map,
     RunState, State,
 };
 
 /// Move the player if possible
 fn try_move_player(world: &mut World, player_entity: Entity, map_entity: Entity, dx: i32, dy: i32) {
-    let mut wants_to_melee = None;
+    let mut attack_cmd_bundle = None;
 
     {
         let map = world.get::<Map>(map_entity).unwrap();
@@ -24,8 +25,10 @@ fn try_move_player(world: &mut World, player_entity: Entity, map_entity: Entity,
             for entity in map.get_entities_on_tile(x, y) {
                 match world.get::<CombatStats>(*entity) {
                     Ok(_stats) => {
-                        // console::log(&format!("From Hell's Heart, I stab thee!"));
-                        wants_to_melee = Some(WantsToMelee { target: *entity });
+                        attack_cmd_bundle = Some(command_bundle(InitiateAttackCommand {
+                            attacker: player_entity,
+                            defender: *entity,
+                        }));
 
                         // TODO: Improve flow
                         break;
@@ -42,8 +45,8 @@ fn try_move_player(world: &mut World, player_entity: Entity, map_entity: Entity,
         }
     }
 
-    if let Some(wants_to_melee) = wants_to_melee {
-        world.insert_one(player_entity, wants_to_melee).unwrap();
+    if let Some(components) = attack_cmd_bundle {
+        world.spawn(components);
     }
 }
 

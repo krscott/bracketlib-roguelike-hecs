@@ -1,8 +1,10 @@
 use bracket_lib::prelude::*;
 
 mod color;
+mod command;
 mod components;
 mod damage_system;
+mod despawn_entities_system;
 mod glyph;
 mod map;
 mod map_indexing_system;
@@ -12,8 +14,10 @@ mod player;
 mod rect;
 mod visibility_system;
 
+use command::clear_commands_system;
 use components::{BlocksTile, CombatStats, Monster, Name, Player, Position, Renderable, Viewshed};
-use damage_system::{damage_system, delete_the_dead};
+use damage_system::damage_system;
+use despawn_entities_system::despawn_entities_system;
 use hecs::{Entity, World};
 use map::Map;
 use map_indexing_system::map_indexing_system;
@@ -47,13 +51,18 @@ impl State {
     }
 
     fn run_systems(&mut self) {
-        visibility_system(&mut self.world, self.player_entity, self.map_entity);
-        monster_ai_system(&mut self.world, self.player_entity, self.map_entity);
-        melee_combat_system(&mut self.world);
-        damage_system(&mut self.world);
+        let world = &mut self.world;
 
-        delete_the_dead(&mut self.world);
-        map_indexing_system(&mut self.world, self.map_entity);
+        // Actions
+        visibility_system(world, self.player_entity, self.map_entity);
+        monster_ai_system(world, self.player_entity, self.map_entity);
+        melee_combat_system(world);
+        damage_system(world);
+
+        // Cleanup
+        despawn_entities_system(world);
+        map_indexing_system(world, self.map_entity);
+        clear_commands_system(world);
     }
 }
 

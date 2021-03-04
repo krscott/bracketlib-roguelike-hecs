@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use bracket_lib::prelude::*;
-use hecs::{Entity, World};
+use hecs::Entity;
 
 #[derive(Debug)]
 pub struct Position {
@@ -74,28 +74,20 @@ pub struct CombatStats {
     pub power: i32,
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct WantsToMelee {
-    pub target: Entity,
+#[derive(Debug)]
+pub struct Command;
+
+#[derive(Debug)]
+pub struct InitiateAttackCommand {
+    pub attacker: Entity,
+    pub defender: Entity,
 }
 
 #[derive(Debug)]
-pub struct SufferDamage {
-    pub amount: Vec<i32>,
+pub struct DamageCommand {
+    pub entity: Entity,
+    pub amount: i32,
 }
 
-impl SufferDamage {
-    pub fn new_damage(world: &mut World, victim: Entity, amount: i32) {
-        if let Ok(mut suffering) = world.get_mut::<Self>(victim) {
-            suffering.amount.push(amount);
-
-            // Cannot use if-let-else because `world` is borrowed in if-let above
-            return;
-        }
-
-        let dmg = Self {
-            amount: vec![amount],
-        };
-        world.insert_one(victim, dmg).unwrap();
-    }
-}
+#[derive(Debug)]
+pub struct DespawnCommand(pub Entity);

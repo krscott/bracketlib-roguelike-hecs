@@ -1,33 +1,37 @@
+use std::collections::HashSet;
+
+use bracket_lib::prelude::console;
 use hecs::World;
 
-use crate::{components::SufferDamage, CombatStats};
+use crate::{
+    command::command_bundle,
+    components::{DamageCommand, DespawnCommand, Name},
+    CombatStats,
+};
 
 pub fn damage_system(world: &mut World) {
-    let mut entities = Vec::new();
+    let mut despawn_entities = HashSet::new();
 
-    for (entity, (stats, damage)) in world
-        .query::<(&mut CombatStats, &mut SufferDamage)>()
-        .into_iter()
-    {
-        stats.hp -= damage.amount.iter().sum::<i32>();
+    for (_, cmd) in world.query::<&DamageCommand>().into_iter() {
+        let mut query_combat_stats = world.query_one::<&mut CombatStats>(cmd.entity).unwrap();
+        let stats = query_combat_stats.get().unwrap();
 
-        entities.push(entity);
+        stats.hp = i32::max(0, stats.hp - cmd.amount);
+
+        if stats.hp <= 0 {
+            despawn_entities.insert(cmd.entity);
+
+            if let Ok(mut q) = world.query_one::<&Name>(cmd.entity) {
+                if let Some(Name(name)) = q.get() {
+                    console::log(&format!("{} was slain!", name));
+                }
+            }
+        }
     }
 
-    for entity in entities {
-        world.remove_one::<SufferDamage>(entity).unwrap();
-    }
-}
-
-pub fn delete_the_dead(world: &mut World) {
-    let dead = world
-        .query::<&CombatStats>()
-        .into_iter()
-        .filter(|(_entity, stats)| stats.hp <= 0)
-        .map(|(entity, _)| entity)
-        .collect::<Vec<_>>();
-
-    for victim in dead {
-        world.despawn(victim).unwrap();
-    }
+    world.spawn_batch(
+        despawn_entities
+            .into_iter()
+            .map(|ent| command_bundle(DespawnCommand(ent))),
+    );
 }
