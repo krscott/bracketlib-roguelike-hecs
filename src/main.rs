@@ -1,11 +1,11 @@
 use bracket_lib::prelude::*;
 
-mod color;
+mod cliopt;
 mod command;
 mod components;
+mod config;
 mod damage_system;
 mod despawn_entities_system;
-mod glyph;
 mod map;
 mod map_indexing_system;
 mod melee_combat_system;
@@ -16,6 +16,7 @@ mod visibility_system;
 
 use command::clear_commands_system;
 use components::{BlocksTile, CombatStats, Monster, Name, Player, Position, Renderable, Viewshed};
+use config::Config;
 use damage_system::damage_system;
 use despawn_entities_system::despawn_entities_system;
 use hecs::{Entity, World};
@@ -36,26 +37,13 @@ pub enum RunState {
 
 pub struct State {
     pub world: World,
-    run_state_entity: Entity,
-    player_entity: Entity,
-    map_entity: Entity,
+    pub config: Config,
+    pub run_state_entity: Entity,
+    pub player_entity: Entity,
+    pub map_entity: Entity,
 }
 
 impl State {
-    fn new(
-        world: World,
-        run_state_entity: Entity,
-        player_entity: Entity,
-        map_entity: Entity,
-    ) -> Self {
-        Self {
-            world,
-            run_state_entity,
-            player_entity,
-            map_entity,
-        }
-    }
-
     fn run_systems(&mut self) {
         let world = &mut self.world;
 
@@ -119,13 +107,16 @@ impl GameState for State {
 
         self.set_run_state(next_run_state);
 
-        context.cls_bg(color::bg());
+        context.cls_bg(self.config.bg);
 
-        map::draw_map(context, &self.world, self.map_entity);
+        map::draw_map(context, &self.world, &self.config, self.map_entity);
     }
 }
 
 fn main() -> BError {
+    let opts = cliopt::parse_opt_args()?;
+    let config = opts.config;
+
     let context = BTermBuilder::simple80x50()
         .with_title("Roguelike Tutorial")
         .build()?;
@@ -143,9 +134,9 @@ fn main() -> BError {
             y: player_y,
         },
         Renderable {
-            glyph: glyph::player(),
-            fg: color::player_fg(),
-            bg: color::bg(),
+            glyph: config.player.glyph,
+            fg: config.player.fg,
+            bg: config.player.bg,
         },
         Viewshed::with_range(8),
         CombatStats {
@@ -161,20 +152,16 @@ fn main() -> BError {
     for (i, room) in map.get_rooms().iter().enumerate() {
         let (x, y) = room.center();
         if (x, y) != (player_x, player_y) {
-            let (glyph, name) = match rng.roll_dice(1, 2) {
-                1 => (glyph::monster_goblin(), "Goblin"),
-                _ => (glyph::monster_orc(), "Orc"),
+            let (renderable, name): (Renderable, &str) = match rng.roll_dice(1, 2) {
+                1 => (config.goblin.clone().into(), "Goblin"),
+                _ => (config.orc.clone().into(), "Orc"),
             };
 
             to_spawn.push((
                 Monster,
                 Name(format!("{} #{}", name, i)),
                 Position { x, y },
-                Renderable {
-                    glyph,
-                    fg: color::monster_fg(),
-                    bg: color::bg(),
-                },
+                renderable,
                 Viewshed::with_range(8),
                 BlocksTile,
                 CombatStats {
@@ -192,7 +179,13 @@ fn main() -> BError {
 
     let run_state_entity = world.spawn((RunState::PreRun,));
 
-    let state = State::new(world, run_state_entity, player_entity, map_entity);
+    let state = State {
+        world,
+        config,
+        run_state_entity,
+        player_entity,
+        map_entity,
+    };
 
     main_loop(context, state)
 }

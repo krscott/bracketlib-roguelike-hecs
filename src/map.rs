@@ -6,11 +6,10 @@ use std::{
     vec,
 };
 
-use crate::glyph;
-use crate::rect::Rect;
 use crate::{
-    color,
     components::{Position, Renderable},
+    config::Config,
+    rect::Rect,
 };
 
 const EMPTY_ENTITY_ARRAY: &'static [Entity] = &[];
@@ -22,23 +21,28 @@ pub enum TileType {
 }
 
 impl TileType {
-    fn fg(&self, is_visible: bool) -> RGB {
+    fn fg(&self, config: &Config, is_visible: bool) -> RGB {
         match (self, is_visible) {
-            (TileType::Wall, true) => color::wall_fg(),
-            (TileType::Wall, false) => color::wall_fog_fg(),
-            (TileType::Floor, true) => color::floor_fg(),
-            (TileType::Floor, false) => color::floor_fog_fg(),
+            (TileType::Wall, true) => config.wall.fg,
+            (TileType::Wall, false) => config.wall.fog_fg,
+            (TileType::Floor, true) => config.floor.fg,
+            (TileType::Floor, false) => config.floor.fog_fg,
         }
     }
 
-    fn bg(&self, _is_visible: bool) -> RGB {
-        color::bg()
+    fn bg(&self, config: &Config, is_visible: bool) -> RGB {
+        match (self, is_visible) {
+            (TileType::Wall, true) => config.wall.bg,
+            (TileType::Wall, false) => config.wall.fog_bg,
+            (TileType::Floor, true) => config.floor.bg,
+            (TileType::Floor, false) => config.floor.fog_bg,
+        }
     }
 
-    fn glyph(&self) -> FontCharType {
+    fn glyph(&self, config: &Config) -> FontCharType {
         match self {
-            TileType::Wall => glyph::wall(),
-            TileType::Floor => glyph::floor(),
+            TileType::Wall => config.wall.glyph,
+            TileType::Floor => config.floor.glyph,
         }
     }
 
@@ -316,14 +320,20 @@ impl Algorithm2D for Map {
     }
 }
 
-pub fn draw_map(context: &mut BTerm, world: &World, map_entity: Entity) {
+pub fn draw_map(context: &mut BTerm, world: &World, config: &Config, map_entity: Entity) {
     let map = world.get::<Map>(map_entity).unwrap();
 
     for (i, tile) in map.tiles.iter().enumerate() {
         if map.revealed_tiles[i] {
             let (x, y) = map.get_coords(i);
-            let is_vis = map.visible_tiles[i];
-            context.set(x, y, tile.fg(is_vis), tile.bg(is_vis), tile.glyph());
+            let is_visible = map.visible_tiles[i];
+            context.set(
+                x,
+                y,
+                tile.fg(config, is_visible),
+                tile.bg(config, is_visible),
+                tile.glyph(config),
+            );
         }
     }
 
