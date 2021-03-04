@@ -6,6 +6,7 @@ mod components;
 mod config;
 mod damage_system;
 mod despawn_entities_system;
+mod gui;
 mod map;
 mod map_indexing_system;
 mod melee_combat_system;
@@ -110,6 +111,7 @@ impl GameState for State {
         context.cls_bg(self.config.bg);
 
         map::draw_map(context, &self.world, &self.config, self.map_entity);
+        gui::draw_ui(context, &self.world, &self.config);
     }
 }
 
@@ -123,7 +125,7 @@ fn main() -> BError {
 
     let mut world = World::new();
 
-    let map = Map::rooms_and_cooridors(80, 50);
+    let map = Map::rooms_and_cooridors(gui::MAP_VIEW_WIDTH as i32, gui::MAP_VIEW_HEIGHT as i32);
     let (player_x, player_y) = map.get_player_starting_position();
 
     let player_entity = world.spawn((

@@ -67,6 +67,9 @@ pub struct Map {
 
 impl Map {
     fn blank(width: i32, height: i32, tile_type: TileType) -> Self {
+        assert!(width > 0);
+        assert!(height > 0);
+
         let num_tiles = width as usize * height as usize;
 
         Self {

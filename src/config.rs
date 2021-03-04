@@ -11,8 +11,10 @@ pub fn default_user_config() -> UserConfig {
     UserConfig {
         default_fg: "#c5ccb8".into(),
         default_fog_fg: "#9a9a97".into(),
-        default_bg: "#0c0c0c".into(),
+        default_bg: "#433455".into(),
         default_fog_bg: "#0c0c0c".into(),
+        ui_fg: None,
+        ui_bg: None,
         player: TileUserConfig {
             glyph: '@',
             fg: Some("#c28d75".into()),
@@ -76,6 +78,9 @@ pub struct UserConfig {
     pub default_bg: String,
     pub default_fog_bg: String,
 
+    pub ui_fg: Option<String>,
+    pub ui_bg: Option<String>,
+
     pub player: TileUserConfig,
     pub wall: TileUserConfig,
     pub floor: TileUserConfig,
@@ -128,6 +133,8 @@ impl From<TileConfig> for Renderable {
 #[derive(Debug, Clone)]
 pub struct Config {
     pub bg: RGB,
+    pub ui_fg: RGB,
+    pub ui_bg: RGB,
     pub player: TileConfig,
     pub wall: TileConfig,
     pub floor: TileConfig,
@@ -144,6 +151,8 @@ impl TryFrom<UserConfig> for Config {
             default_fog_fg,
             default_bg,
             default_fog_bg,
+            ui_fg,
+            ui_bg,
             player,
             wall,
             floor,
@@ -161,6 +170,8 @@ impl TryFrom<UserConfig> for Config {
 
         Ok(Config {
             bg: defaults.bg,
+            ui_fg: parse_color_code_option(ui_fg, defaults.fg)?,
+            ui_bg: parse_color_code_option(ui_bg, defaults.bg)?,
             player: TileConfig::try_from_user_config(player, &defaults)?,
             wall: TileConfig::try_from_user_config(wall, &defaults)?,
             floor: TileConfig::try_from_user_config(floor, &defaults)?,
