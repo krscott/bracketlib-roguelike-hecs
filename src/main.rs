@@ -23,28 +23,34 @@ use map::Map;
 use map_indexing_system::map_indexing_system;
 use melee_combat_system::melee_combat_system;
 use monster_ai_system::monster_ai_system;
+use player::player_input;
 use visibility_system::visibility_system;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum RunState {
-    Paused,
-    Running,
+    AwaitingInput,
+    PreRun,
+    PlayerTurn,
+    AiTurn,
 }
 
 pub struct State {
     pub world: World,
-    pub runstate: RunState,
-    pub player_entity: Entity,
-    pub map_entity: Entity,
+    run_state_entity: Entity,
+    player_entity: Entity,
+    map_entity: Entity,
 }
 
 impl State {
-    fn new(world: World, player_entity: Entity, map_entity: Entity) -> Self {
-        let runstate = RunState::Running;
-
+    fn new(
+        world: World,
+        run_state_entity: Entity,
+        player_entity: Entity,
+        map_entity: Entity,
+    ) -> Self {
         Self {
             world,
-            runstate,
+            run_state_entity,
             player_entity,
             map_entity,
         }
@@ -55,7 +61,12 @@ impl State {
 
         // Actions
         visibility_system(world, self.player_entity, self.map_entity);
-        monster_ai_system(world, self.player_entity, self.map_entity);
+        monster_ai_system(
+            world,
+            self.run_state_entity,
+            self.player_entity,
+            self.map_entity,
+        );
         melee_combat_system(world);
         damage_system(world);
 
@@ -64,20 +75,49 @@ impl State {
         map_indexing_system(world, self.map_entity);
         clear_commands_system(world);
     }
+
+    fn get_run_state(&mut self) -> RunState {
+        let mut query = self
+            .world
+            .query_one::<&RunState>(self.run_state_entity)
+            .unwrap();
+        let run_state = query.get().unwrap();
+
+        *run_state
+    }
+
+    fn set_run_state(&mut self, new_run_state: RunState) {
+        let mut query = self
+            .world
+            .query_one::<&mut RunState>(self.run_state_entity)
+            .unwrap();
+        let run_state = query.get().unwrap();
+
+        *run_state = new_run_state;
+    }
 }
 
 impl GameState for State {
     fn tick(&mut self, context: &mut BTerm) {
-        match self.runstate {
-            RunState::Paused => {
-                self.runstate =
-                    player::player_input(self, context, self.player_entity, self.map_entity);
-            }
-            RunState::Running => {
+        let next_run_state = match self.get_run_state() {
+            RunState::PreRun => {
                 self.run_systems();
-                self.runstate = RunState::Paused;
+                RunState::AwaitingInput
             }
-        }
+            RunState::AwaitingInput => {
+                player_input(self, context, self.player_entity, self.map_entity)
+            }
+            RunState::PlayerTurn => {
+                self.run_systems();
+                RunState::AiTurn
+            }
+            RunState::AiTurn => {
+                self.run_systems();
+                RunState::AwaitingInput
+            }
+        };
+
+        self.set_run_state(next_run_state);
 
         context.cls_bg(color::bg());
 
@@ -150,7 +190,9 @@ fn main() -> BError {
 
     let map_entity = world.spawn((map,));
 
-    let state = State::new(world, player_entity, map_entity);
+    let run_state_entity = world.spawn((RunState::PreRun,));
+
+    let state = State::new(world, run_state_entity, player_entity, map_entity);
 
     main_loop(context, state)
 }

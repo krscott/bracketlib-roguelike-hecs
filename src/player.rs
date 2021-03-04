@@ -73,11 +73,11 @@ pub fn player_input(
 
         if let Some((dx, dy)) = delta_xy {
             try_move_player(&mut state.world, player_entity, map_entity, dx, dy);
-            RunState::Running
+            RunState::PlayerTurn
         } else {
-            RunState::Paused
+            RunState::AwaitingInput
         }
     } else {
-        RunState::Paused
+        RunState::AwaitingInput
     }
 }

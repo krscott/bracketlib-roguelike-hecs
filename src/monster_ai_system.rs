@@ -5,22 +5,36 @@ use crate::{
     command::command_bundle,
     components::{InitiateAttackCommand, Monster, Name, Position, Viewshed},
     map::Map,
+    RunState,
 };
 
-pub fn monster_ai_system(world: &mut World, player_entity: Entity, map_entity: Entity) {
+pub fn monster_ai_system(
+    world: &mut World,
+    run_state_entity: Entity,
+    player_entity: Entity,
+    map_entity: Entity,
+) {
+    {
+        let mut run_state = world.query_one::<&RunState>(run_state_entity).unwrap();
+        let run_state = run_state.get().unwrap();
+        if *run_state != RunState::AiTurn {
+            return;
+        }
+    }
+
     let mut attack_cmd_batch = Vec::new();
 
     {
         let mut player_query = world
             .query_one::<(&Position, &Name)>(player_entity)
             .unwrap();
-        let (player_pos, player_name) = player_query.get().unwrap();
+        let (player_pos, _player_name) = player_query.get().unwrap();
 
         // let player_pos = world.get::<Position>(player_entity).unwrap();
         let mut map = world.get_mut::<Map>(map_entity).unwrap();
         let player_pos_index = map.get_index(player_pos.x, player_pos.y).unwrap();
 
-        for (monster_entity, (_, monster_viewshed, Name(monster_name), monster_pos)) in world
+        for (monster_entity, (_, monster_viewshed, _monster_name, monster_pos)) in world
             .query::<(&Monster, &mut Viewshed, &Name, &mut Position)>()
             .into_iter()
         {
@@ -31,12 +45,6 @@ pub fn monster_ai_system(world: &mut World, player_entity: Entity, map_entity: E
                 let distance_to_player = DistanceAlg::Pythagoras
                     .distance2d(monster_pos.to_point(), player_pos.to_point());
                 if distance_to_player < 1.5 {
-                    //TODO: Attack
-
-                    console::log(&format!(
-                        "{} shouts insults at {}",
-                        monster_name, player_name.0
-                    ));
                     attack_cmd_batch.push(command_bundle(InitiateAttackCommand {
                         attacker: monster_entity,
                         defender: player_entity,
