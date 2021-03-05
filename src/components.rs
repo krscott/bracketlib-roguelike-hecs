@@ -23,7 +23,7 @@ impl From<Position> for Point {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Renderable {
     pub glyph: FontCharType,
     pub fg: RGB,

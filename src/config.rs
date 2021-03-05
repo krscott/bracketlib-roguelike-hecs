@@ -18,7 +18,7 @@ pub fn default_user_config() -> UserConfig {
         default_fog_bg: "#0c0c0c".into(),
 
         ui: None,
-        ui_hp: Some(TextUserConfig {
+        ui_title: Some(TextUserConfig {
             fg: Some("#be955c".into()),
             bg: None,
         }),
@@ -112,7 +112,7 @@ pub struct UserConfig {
     pub default_fog_bg: String,
 
     pub ui: Option<TextUserConfig>,
-    pub ui_hp: Option<TextUserConfig>,
+    pub ui_title: Option<TextUserConfig>,
     pub ui_hp_bar: Option<TextUserConfig>,
     pub ui_tooltip: Option<TextUserConfig>,
 
@@ -206,7 +206,7 @@ pub struct Config {
     pub post_burnin: Option<RGB>,
     pub bg: RGB,
     pub ui: TextConfig,
-    pub ui_hp: TextConfig,
+    pub ui_title: TextConfig,
     pub ui_hp_bar: TextConfig,
     pub ui_tooltip: TextConfig,
     pub player: TileConfig,
@@ -229,7 +229,7 @@ impl TryFrom<UserConfig> for Config {
             default_bg,
             default_fog_bg,
             ui,
-            ui_hp,
+            ui_title: ui_hp,
             ui_hp_bar,
             ui_tooltip,
             player,
@@ -263,7 +263,7 @@ impl TryFrom<UserConfig> for Config {
             post_burnin,
             bg: tile_defaults.bg,
             ui: TextConfig::try_from_option_user_config(ui, &text_defaults)?,
-            ui_hp: TextConfig::try_from_option_user_config(ui_hp, &text_defaults)?,
+            ui_title: TextConfig::try_from_option_user_config(ui_hp, &text_defaults)?,
             ui_hp_bar: TextConfig::try_from_option_user_config(ui_hp_bar, &text_defaults)?,
             ui_tooltip: TextConfig::try_from_option_user_config(ui_tooltip, &text_defaults)?,
             player: TileConfig::try_from_user_config(player, &tile_defaults)?,

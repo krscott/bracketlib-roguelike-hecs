@@ -43,6 +43,7 @@ pub enum RunState {
     PreRun,
     PlayerTurn,
     AiTurn,
+    ShowInventory,
 }
 
 impl RunState {
@@ -77,6 +78,8 @@ impl State {
 
 impl GameState for State {
     fn tick(&mut self, context: &mut BTerm) {
+        context.cls_bg(self.config.bg);
+
         let run_state = match RunState::from_world(&self.world) {
             Some(run_state) => run_state,
             None => {
@@ -90,7 +93,7 @@ impl GameState for State {
                 self.run_systems();
                 RunState::AwaitingInput
             }
-            RunState::AwaitingInput => player_input(&mut self.world, context),
+            RunState::AwaitingInput => player_input(context, &mut self.world),
             RunState::PlayerTurn => {
                 self.run_systems();
                 RunState::AiTurn
@@ -99,16 +102,29 @@ impl GameState for State {
                 self.run_systems();
                 RunState::AwaitingInput
             }
+            RunState::ShowInventory => {
+                // TODO: Separate UI and input response
+                match gui::ui_input(context) {
+                    gui::ItemMenuResult::Cancel => RunState::AwaitingInput,
+                    gui::ItemMenuResult::NoResponse => RunState::ShowInventory,
+                    gui::ItemMenuResult::Selected => RunState::ShowInventory,
+                }
+            }
         };
+
+        map::draw_map(context, &self.world, &self.config);
+        gui::draw_ui(context, &self.world, &self.config);
+
+        match run_state {
+            RunState::ShowInventory => {
+                gui::draw_inventory(context, &mut self.world, &self.config);
+            }
+            _ => {}
+        }
 
         if let Some((_, run_state)) = self.world.query::<&mut RunState>().into_iter().next() {
             *run_state = next_run_state;
         }
-
-        context.cls_bg(self.config.bg);
-
-        map::draw_map(context, &self.world, &self.config);
-        gui::draw_ui(context, &self.world, &self.config);
     }
 }
 

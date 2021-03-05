@@ -24,8 +24,8 @@ impl Player {
 }
 
 /// Check for player input and try to move Player entity
-pub fn player_input(world: &mut World, context: &mut BTerm) -> RunState {
-    let is_taking_turn = if let Some(key) = context.key {
+pub fn player_input(context: &mut BTerm, world: &mut World) -> RunState {
+    if let Some(key) = context.key {
         match key {
             VirtualKeyCode::Left | VirtualKeyCode::Numpad4 | VirtualKeyCode::H => {
                 try_move_player(world, -1, 0)
@@ -45,21 +45,16 @@ pub fn player_input(world: &mut World, context: &mut BTerm) -> RunState {
             VirtualKeyCode::Numpad3 | VirtualKeyCode::N => try_move_player(world, 1, 1),
             VirtualKeyCode::Numpad5 | VirtualKeyCode::Period => try_move_player(world, 0, 0),
             VirtualKeyCode::G => try_pickup_item(world),
-            _ => false,
+            VirtualKeyCode::I => RunState::ShowInventory,
+            _ => RunState::AwaitingInput,
         }
-    } else {
-        false
-    };
-
-    if is_taking_turn {
-        RunState::PlayerTurn
     } else {
         RunState::AwaitingInput
     }
 }
 
 /// Move the player if possible
-fn try_move_player(world: &mut World, dx: i32, dy: i32) -> bool {
+fn try_move_player(world: &mut World, dx: i32, dy: i32) -> RunState {
     let mut is_taking_turn = false;
     let mut attack_cmd_bundle = None;
 
@@ -103,10 +98,14 @@ fn try_move_player(world: &mut World, dx: i32, dy: i32) -> bool {
         world.spawn(components);
     }
 
-    is_taking_turn
+    if is_taking_turn {
+        RunState::PlayerTurn
+    } else {
+        RunState::AwaitingInput
+    }
 }
 
-fn try_pickup_item(world: &mut World) -> bool {
+fn try_pickup_item(world: &mut World) -> RunState {
     let mut item_player_pair = None;
 
     'outer: for (player_entity, (_player, player_pos)) in
@@ -127,12 +126,12 @@ fn try_pickup_item(world: &mut World) -> bool {
                 item: item_entity,
             }));
 
-            true
+            RunState::PlayerTurn
         }
         None => {
             GameLog::push_world(world, "There is nothing here to pick up.");
 
-            false
+            RunState::AwaitingInput
         }
     }
 }
