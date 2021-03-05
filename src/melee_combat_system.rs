@@ -2,50 +2,54 @@ use hecs::World;
 
 use crate::{
     command::command_bundle,
-    components::{CombatStats, DamageCommand, InitiateAttackCommand, Name},
+    components::{CombatStats, DamageCommand, InitiateAttackCommand, Name, Player},
     gamelog::GameLog,
 };
 
 pub fn melee_combat_system(world: &mut World) {
     let mut damage_commands_batch = Vec::new();
 
-    {
-        let mut log = world.query::<&mut GameLog>();
-        let log = &mut log.into_iter().next().map(|(_ent, log)| log);
+    let player_entity = Player::get_entity(world);
 
-        for (_, cmd) in world.query::<&InitiateAttackCommand>().into_iter() {
-            let mut attacker_query = world
-                .query_one::<(&CombatStats, &Name)>(cmd.attacker)
-                .unwrap();
-            let (attacker_stats, attacker_name) = attacker_query.get().unwrap();
+    for (_, cmd) in world.query::<&InitiateAttackCommand>().into_iter() {
+        let mut attacker_query = world
+            .query_one::<(&CombatStats, &Name)>(cmd.attacker)
+            .unwrap();
+        let (attacker_stats, attacker_name) = attacker_query.get().unwrap();
 
-            let mut defender_query = world
-                .query_one::<(&CombatStats, &Name)>(cmd.defender)
-                .unwrap();
-            let (defender_stats, defender_name) = defender_query.get().unwrap();
+        let mut defender_query = world
+            .query_one::<(&CombatStats, &Name)>(cmd.defender)
+            .unwrap();
+        let (defender_stats, defender_name) = defender_query.get().unwrap();
 
-            if attacker_stats.hp > 0 && defender_stats.hp > 0 {
-                let damage = i32::max(0, attacker_stats.power - defender_stats.defense);
+        if attacker_stats.hp > 0 && defender_stats.hp > 0 {
+            let damage = i32::max(0, attacker_stats.power - defender_stats.defense);
 
-                if damage > 0 {
-                    if let Some(log) = log {
-                        log.push(format!(
-                            "{} hits {}, for {} hp.",
-                            attacker_name.0, defender_name.0, damage
-                        ));
-                    }
-                    damage_commands_batch.push(command_bundle(DamageCommand {
-                        entity: cmd.defender,
-                        amount: damage,
-                    }))
-                } else {
-                    if let Some(log) = log {
-                        log.push(format!(
-                            "{} is unable to hurt {}.",
-                            attacker_name.0, defender_name.0
-                        ));
-                    }
-                }
+            let (attacker_name, is_are, defender_name) = if Some(cmd.attacker) == player_entity {
+                ("You", "are", defender_name.0.as_str())
+            } else if Some(cmd.defender) == player_entity {
+                (attacker_name.0.as_str(), "is", "you")
+            } else {
+                (attacker_name.0.as_str(), "is", defender_name.0.as_str())
+            };
+
+            if damage > 0 {
+                GameLog::push_world(
+                    world,
+                    format!("{} hit {} for {} hp.", attacker_name, defender_name, damage),
+                );
+                damage_commands_batch.push(command_bundle(DamageCommand {
+                    entity: cmd.defender,
+                    amount: damage,
+                }))
+            } else {
+                GameLog::push_world(
+                    world,
+                    format!(
+                        "{} {} unable to hurt {}.",
+                        attacker_name, is_are, defender_name
+                    ),
+                );
             }
         }
     }

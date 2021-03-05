@@ -4,7 +4,7 @@ use hecs::World;
 
 use crate::{
     command::command_bundle,
-    components::{DamageCommand, DespawnCommand, Name},
+    components::{DamageCommand, DespawnCommand, Name, Player},
     gamelog::GameLog,
     CombatStats,
 };
@@ -13,6 +13,8 @@ pub fn damage_system(world: &mut World) {
     let mut despawn_entities = HashSet::new();
 
     {
+        let player_entity = Player::get_entity(world);
+
         for (_, cmd) in world.query::<&DamageCommand>().into_iter() {
             let mut query_combat_stats = world.query_one::<&mut CombatStats>(cmd.entity).unwrap();
             let stats = query_combat_stats.get().unwrap();
@@ -22,9 +24,13 @@ pub fn damage_system(world: &mut World) {
             if stats.hp <= 0 {
                 despawn_entities.insert(cmd.entity);
 
-                if let Ok(mut q) = world.query_one::<&Name>(cmd.entity) {
-                    if let Some(Name(name)) = q.get() {
-                        GameLog::push_world(world, format!("{} was slain!", name));
+                if Some(cmd.entity) == player_entity {
+                    GameLog::push_world(world, "You are dead!");
+                } else {
+                    if let Ok(mut q) = world.query_one::<&Name>(cmd.entity) {
+                        if let Some(Name(name)) = q.get() {
+                            GameLog::push_world(world, format!("{} was slain!", name));
+                        }
                     }
                 }
             }
