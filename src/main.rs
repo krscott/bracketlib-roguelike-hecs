@@ -14,10 +14,11 @@ mod melee_combat_system;
 mod monster_ai_system;
 mod player;
 mod rect;
+mod spawner;
 mod visibility_system;
 
 use command::clear_commands_system;
-use components::{BlocksTile, CombatStats, Monster, Name, Player, Position, Renderable, Viewshed};
+use components::CombatStats;
 use config::Config;
 use damage_system::damage_system;
 use despawn_entities_system::despawn_entities_system;
@@ -104,65 +105,26 @@ fn main() -> BError {
 
     // Generate map
     let map = Map::rooms_and_cooridors(gui::MAP_VIEW_WIDTH as i32, gui::MAP_VIEW_HEIGHT as i32);
-    let (player_x, player_y) = map.get_player_starting_position();
 
     // Create ECS World
     let mut world = World::new();
+
+    // Add RNG
+    world.spawn((RandomNumberGenerator::new(),));
 
     // Spawn Run State
     world.spawn((RunState::PreRun,));
 
     // Spawn Player
-    world.spawn((
-        Player,
-        Name("Player".into()),
-        Position {
-            x: player_x,
-            y: player_y,
-        },
-        Renderable {
-            glyph: config.player.glyph,
-            fg: config.player.fg,
-            bg: config.player.bg,
-        },
-        Viewshed::with_range(8),
-        CombatStats {
-            max_hp: 30,
-            hp: 30,
-            defense: 2,
-            power: 5,
-        },
-    ));
+    let (player_x, player_y) = map.get_player_starting_position();
+    spawner::player(&mut world, &config, player_x, player_y);
 
     // Spawn Monsters
-    {
-        let mut rng = RandomNumberGenerator::new();
-        let mut to_spawn = Vec::new();
-        for (i, room) in map.get_rooms().iter().enumerate() {
-            let (x, y) = room.center();
-            if (x, y) != (player_x, player_y) {
-                let (renderable, name): (Renderable, &str) = match rng.roll_dice(1, 2) {
-                    1 => (config.goblin.clone().into(), "Goblin"),
-                    _ => (config.orc.clone().into(), "Orc"),
-                };
-
-                to_spawn.push((
-                    Monster,
-                    Name(format!("{} #{}", name, i)),
-                    Position { x, y },
-                    renderable,
-                    Viewshed::with_range(8),
-                    BlocksTile,
-                    CombatStats {
-                        max_hp: 16,
-                        hp: 16,
-                        defense: 1,
-                        power: 4,
-                    },
-                ));
-            }
+    for room in map.get_rooms() {
+        let (x, y) = room.center();
+        if (x, y) != (player_x, player_y) {
+            spawner::rng_monster(&mut world, &config, x, y)?;
         }
-        world.spawn_batch(to_spawn);
     }
 
     // Spawn Map

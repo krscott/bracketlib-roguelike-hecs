@@ -145,15 +145,23 @@ impl TileConfig {
             fog_bg: parse_color_code_option(fog_bg, defaults.fog_bg)?,
         })
     }
+
+    pub fn into_renderable(self) -> Renderable {
+        Renderable {
+            glyph: self.glyph,
+            fg: self.fg,
+            bg: self.bg,
+        }
+    }
+
+    pub fn to_renderable(&self) -> Renderable {
+        self.clone().into_renderable()
+    }
 }
 
 impl From<TileConfig> for Renderable {
     fn from(value: TileConfig) -> Self {
-        Renderable {
-            glyph: value.glyph,
-            fg: value.fg,
-            bg: value.bg,
-        }
+        value.into_renderable()
     }
 }
 
