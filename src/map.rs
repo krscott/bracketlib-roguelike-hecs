@@ -323,26 +323,26 @@ impl Algorithm2D for Map {
     }
 }
 
-pub fn draw_map(context: &mut BTerm, world: &World, config: &Config, map_entity: Entity) {
-    let map = world.get::<Map>(map_entity).unwrap();
-
-    for (i, tile) in map.tiles.iter().enumerate() {
-        if map.revealed_tiles[i] {
-            let (x, y) = map.get_coords(i);
-            let is_visible = map.visible_tiles[i];
-            context.set(
-                x,
-                y,
-                tile.fg(config, is_visible),
-                tile.bg(config, is_visible),
-                tile.glyph(config),
-            );
+pub fn draw_map(context: &mut BTerm, world: &World, config: &Config) {
+    if let Some((_, map)) = world.query::<&mut Map>().into_iter().next() {
+        for (i, tile) in map.tiles.iter().enumerate() {
+            if map.revealed_tiles[i] {
+                let (x, y) = map.get_coords(i);
+                let is_visible = map.visible_tiles[i];
+                context.set(
+                    x,
+                    y,
+                    tile.fg(config, is_visible),
+                    tile.bg(config, is_visible),
+                    tile.glyph(config),
+                );
+            }
         }
-    }
 
-    for (_, (pos, render)) in world.query::<(&Position, &Renderable)>().into_iter() {
-        if map.is_tile_visible(pos.x, pos.y) {
-            context.set(pos.x, pos.y, render.fg, render.bg, render.glyph);
+        for (_, (pos, render)) in world.query::<(&Position, &Renderable)>().into_iter() {
+            if map.is_tile_visible(pos.x, pos.y) {
+                context.set(pos.x, pos.y, render.fg, render.bg, render.glyph);
+            }
         }
     }
 }

@@ -13,9 +13,6 @@ pub fn damage_system(world: &mut World) {
     let mut despawn_entities = HashSet::new();
 
     {
-        let mut log = world.query::<&mut GameLog>();
-        let log = &mut log.into_iter().next().map(|(_ent, log)| log);
-
         for (_, cmd) in world.query::<&DamageCommand>().into_iter() {
             let mut query_combat_stats = world.query_one::<&mut CombatStats>(cmd.entity).unwrap();
             let stats = query_combat_stats.get().unwrap();
@@ -27,9 +24,7 @@ pub fn damage_system(world: &mut World) {
 
                 if let Ok(mut q) = world.query_one::<&Name>(cmd.entity) {
                     if let Some(Name(name)) = q.get() {
-                        if let Some(log) = log {
-                            log.push(format!("{} was slain!", name));
-                        }
+                        GameLog::push_world(world, format!("{} was slain!", name));
                     }
                 }
             }

@@ -1,21 +1,17 @@
 use bracket_lib::prelude::*;
-use hecs::{Entity, World};
+use hecs::World;
 
 use crate::{
     command::command_bundle,
-    components::{CombatStats, InitiateAttackCommand, Player, Position, Viewshed},
+    components::{CombatStats, Command, InitiateAttackCommand, Player, Position, Viewshed},
     map::Map,
     RunState, State,
 };
 
 /// Move the player if possible
-fn try_move_player(world: &mut World, player_entity: Entity, map_entity: Entity, dx: i32, dy: i32) {
-    let mut attack_cmd_bundle = None;
-
-    {
-        let map = world.get::<Map>(map_entity).unwrap();
-
-        for (_, (_player, pos, viewshed)) in world
+fn try_move_player(world: &World, dx: i32, dy: i32) -> Vec<(Command, InitiateAttackCommand)> {
+    if let Some((_, map)) = world.query::<&Map>().into_iter().next() {
+        for (player_entity, (_player, pos, viewshed)) in world
             .query::<(&Player, &mut Position, &mut Viewshed)>()
             .into_iter()
         {
@@ -25,13 +21,13 @@ fn try_move_player(world: &mut World, player_entity: Entity, map_entity: Entity,
             for entity in map.get_entities_on_tile(x, y) {
                 match world.get::<CombatStats>(*entity) {
                     Ok(_stats) => {
-                        attack_cmd_bundle = Some(command_bundle(InitiateAttackCommand {
+                        let attack_cmd_bundle = command_bundle(InitiateAttackCommand {
                             attacker: player_entity,
                             defender: *entity,
-                        }));
+                        });
 
                         // TODO: Improve flow
-                        break;
+                        return vec![attack_cmd_bundle];
                     }
                     Err(_) => {}
                 }
@@ -45,18 +41,11 @@ fn try_move_player(world: &mut World, player_entity: Entity, map_entity: Entity,
         }
     }
 
-    if let Some(components) = attack_cmd_bundle {
-        world.spawn(components);
-    }
+    Vec::new()
 }
 
 /// Check for player input and try to move Player entity
-pub fn player_input(
-    state: &mut State,
-    context: &mut BTerm,
-    player_entity: Entity,
-    map_entity: Entity,
-) -> RunState {
+pub fn player_input(state: &mut State, context: &mut BTerm) -> RunState {
     if let Some(key) = context.key {
         let delta_xy = match key {
             VirtualKeyCode::Left | VirtualKeyCode::Numpad4 | VirtualKeyCode::H => Some((-1, 0)),
@@ -72,7 +61,8 @@ pub fn player_input(
         };
 
         if let Some((dx, dy)) = delta_xy {
-            try_move_player(&mut state.world, player_entity, map_entity, dx, dy);
+            let attack_commands = try_move_player(&state.world, dx, dy);
+            state.world.spawn_batch(attack_commands);
             RunState::PlayerTurn
         } else {
             RunState::AwaitingInput

@@ -35,7 +35,7 @@ pub struct Renderable {
 pub struct Player;
 
 impl Player {
-    pub fn get_entity(world: &mut World) -> Option<Entity> {
+    pub fn get_entity(world: &World) -> Option<Entity> {
         world
             .query::<&Player>()
             .into_iter()
