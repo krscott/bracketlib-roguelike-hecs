@@ -1,5 +1,5 @@
 use bracket_lib::{
-    prelude::{Algorithm2D, BTerm, BaseMap, DistanceAlg, FontCharType, Point, SmallVec, RGB},
+    prelude::{Algorithm2D, BTerm, BaseMap, DistanceAlg, FontCharType, Point, Rect, SmallVec, RGB},
     random::RandomNumberGenerator,
 };
 use hecs::{Entity, World};
@@ -12,7 +12,6 @@ use std::{
 use crate::{
     components::{Position, Renderable},
     config::Config,
-    rect::Rect,
 };
 
 const EMPTY_ENTITY_ARRAY: &'static [Entity] = &[];
@@ -101,7 +100,7 @@ impl Map {
             let h = rng.range(MIN_SIZE, MAX_SIZE);
             let x = rng.roll_dice(1, map.width - w - 1) - 1;
             let y = rng.roll_dice(1, map.height - h - 1) - 1;
-            let new_room = Rect::new(x, y, w, h);
+            let new_room = Rect::with_size(x, y, w, h);
 
             let intersects_existing_room = map.rooms.iter().any(|other| new_room.intersect(other));
 
@@ -109,8 +108,8 @@ impl Map {
                 map.apply_rect(&new_room, TileType::Floor);
 
                 if let Some(prev_room) = map.rooms.last() {
-                    let (new_x, new_y) = new_room.center();
-                    let (prev_x, prev_y) = prev_room.center();
+                    let (new_x, new_y) = new_room.center().to_tuple();
+                    let (prev_x, prev_y) = prev_room.center().to_tuple();
 
                     if rng.range(0, 2) == 1 {
                         map.apply_horizontal_line(prev_x, new_x, prev_y, TileType::Floor);
@@ -142,7 +141,7 @@ impl Map {
 
     pub fn get_center_of_first_room(&self) -> (i32, i32) {
         match self.rooms.first() {
-            Some(room) => room.center(),
+            Some(room) => room.center().to_tuple(),
             None => (self.width / 2, self.height / 2),
         }
     }

@@ -1,12 +1,11 @@
 use anyhow::anyhow;
-use bracket_lib::random::RandomNumberGenerator;
+use bracket_lib::{prelude::Rect, random::RandomNumberGenerator};
 use hecs::{Entity, World};
 
 use crate::{
     components::{BlocksTile, CombatStats, Monster, Name, Position, Renderable, Viewshed},
     config::Config,
     player::Player,
-    rect::Rect,
 };
 
 const MAX_MONSTERS: i32 = 4;

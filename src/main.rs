@@ -17,7 +17,6 @@ mod map_indexing_system;
 mod melee_combat_system;
 mod monster_ai_system;
 mod player;
-mod rect;
 mod spawner;
 mod visibility_system;
 
