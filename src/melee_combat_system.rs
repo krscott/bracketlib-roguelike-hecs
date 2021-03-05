@@ -1,3 +1,4 @@
+use bracket_lib::prelude::console;
 use hecs::World;
 
 use crate::{
@@ -12,15 +13,29 @@ pub fn melee_combat_system(world: &mut World) {
     let player_entity = Player::get_entity(world);
 
     for (_, cmd) in world.query::<&InitiateAttackCommand>().into_iter() {
-        let mut attacker_query = world
-            .query_one::<(&CombatStats, &Name)>(cmd.attacker)
-            .unwrap();
-        let (attacker_stats, attacker_name) = attacker_query.get().unwrap();
+        let mut attacker_query = match world.query_one::<(&CombatStats, &Name)>(cmd.attacker) {
+            Ok(q) => q,
+            Err(_err) => {
+                console::log(format!(
+                    "Error: InitiateAttackCommand attacker Entity {} does not have CombatStats component",
+                    cmd.attacker.id()
+                ));
+                continue;
+            }
+        };
+        let (attacker_stats, attacker_name) = attacker_query.get().expect("Unfiltered query");
 
-        let mut defender_query = world
-            .query_one::<(&CombatStats, &Name)>(cmd.defender)
-            .unwrap();
-        let (defender_stats, defender_name) = defender_query.get().unwrap();
+        let mut defender_query = match world.query_one::<(&CombatStats, &Name)>(cmd.defender) {
+            Ok(q) => q,
+            Err(_err) => {
+                console::log(format!(
+                    "Error: InitiateAttackCommand defender Entity {} does not have CombatStats component",
+                    cmd.attacker.id()
+                ));
+                continue;
+            }
+        };
+        let (defender_stats, defender_name) = defender_query.get().expect("Unfiltered query");
 
         if attacker_stats.hp > 0 && defender_stats.hp > 0 {
             let damage = i32::max(0, attacker_stats.power - defender_stats.defense);

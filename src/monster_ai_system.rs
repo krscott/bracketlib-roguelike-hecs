@@ -23,22 +23,22 @@ pub fn monster_ai_system(world: &mut World) {
             .next()
         {
             if let Some((_, mut map)) = world.query::<&mut Map>().into_iter().next() {
-                let player_pos_index = map.get_index(player_pos.x, player_pos.y).unwrap();
-
-                for (monster_entity, (_, monster_viewshed, _monster_name, monster_pos)) in world
-                    .query::<(&Monster, &mut Viewshed, &Name, &mut Position)>()
-                    .into_iter()
-                {
-                    monster_ai_to_player(
-                        &mut attack_cmd_batch,
-                        &mut map,
-                        monster_entity,
-                        monster_pos,
-                        monster_viewshed,
-                        player_entity,
-                        player_pos,
-                        player_pos_index,
-                    )
+                if let Some(player_pos_index) = map.get_index(player_pos.x, player_pos.y) {
+                    for (monster_entity, (_, monster_viewshed, _monster_name, monster_pos)) in world
+                        .query::<(&Monster, &mut Viewshed, &Name, &mut Position)>()
+                        .into_iter()
+                    {
+                        monster_ai_to_player(
+                            &mut attack_cmd_batch,
+                            &mut map,
+                            monster_entity,
+                            monster_pos,
+                            monster_viewshed,
+                            player_entity,
+                            player_pos,
+                            player_pos_index,
+                        )
+                    }
                 }
             }
         }
@@ -69,20 +69,18 @@ fn monster_ai_to_player(
                 defender: player_entity,
             }));
         } else {
-            let path = a_star_search(
-                map.get_index(monster_pos.x, monster_pos.y).unwrap(),
-                player_pos_index,
-                &mut *map,
-            );
+            if let Some(start) = map.get_index(monster_pos.x, monster_pos.y) {
+                let nav = a_star_search(start, player_pos_index, &mut *map);
 
-            if path.success {
-                if let Some(i) = path.steps.get(1) {
-                    let (next_x, next_y) = map.get_coords(*i);
-                    map.set_tile_blocked(monster_pos.x, monster_pos.y, false);
-                    monster_pos.x = next_x;
-                    monster_pos.y = next_y;
-                    monster_viewshed.dirty = true;
-                    map.set_tile_blocked(monster_pos.x, monster_pos.y, true);
+                if nav.success {
+                    if let Some(i) = nav.steps.get(1) {
+                        let (next_x, next_y) = map.get_coords(*i);
+                        map.set_tile_blocked(monster_pos.x, monster_pos.y, false);
+                        monster_pos.x = next_x;
+                        monster_pos.y = next_y;
+                        monster_viewshed.dirty = true;
+                        map.set_tile_blocked(monster_pos.x, monster_pos.y, true);
+                    }
                 }
             }
         }

@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 
+use bracket_lib::prelude::console;
 use hecs::World;
 
 use crate::{
@@ -16,8 +17,17 @@ pub fn damage_system(world: &mut World) {
         let player_entity = Player::get_entity(world);
 
         for (_, cmd) in world.query::<&DamageCommand>().into_iter() {
-            let mut query_combat_stats = world.query_one::<&mut CombatStats>(cmd.entity).unwrap();
-            let stats = query_combat_stats.get().unwrap();
+            let mut stats = match world.query_one::<&mut CombatStats>(cmd.entity) {
+                Ok(stats) => stats,
+                Err(_err) => {
+                    console::log(format!(
+                        "Error: DamageCommand Entity {} does not have CombatStats component",
+                        cmd.entity.id()
+                    ));
+                    continue;
+                }
+            };
+            let stats = stats.get().expect("Unfiltered query");
 
             stats.hp = i32::max(0, stats.hp - cmd.amount);
 

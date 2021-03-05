@@ -71,7 +71,7 @@ fn draw_tooltips(context: &mut BTerm, world: &World, config: &Config) {
             .iter()
             .filter_map(|entity| {
                 let mut query = world.query_one::<&Name>(*entity).ok()?;
-                let Name(name) = query.get().unwrap();
+                let Name(name) = query.get().expect("Unfiltered query");
                 Some(name.clone())
             })
             .collect::<Vec<_>>();

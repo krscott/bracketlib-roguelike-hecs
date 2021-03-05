@@ -72,7 +72,15 @@ impl State {
 
 impl GameState for State {
     fn tick(&mut self, context: &mut BTerm) {
-        let next_run_state = match RunState::from_world(&self.world).unwrap() {
+        let run_state = match RunState::from_world(&self.world) {
+            Some(run_state) => run_state,
+            None => {
+                console::log("Error: Missing RunState Entity");
+                return;
+            }
+        };
+
+        let next_run_state = match run_state {
             RunState::PreRun => {
                 self.run_systems();
                 RunState::AwaitingInput
