@@ -22,6 +22,37 @@ pub enum ItemMenuResult {
     Selected,
 }
 
+pub fn ui_input(context: &mut BTerm) -> ItemMenuResult {
+    match context.key {
+        Some(VirtualKeyCode::Escape) => ItemMenuResult::Cancel,
+        Some(key) => {
+            //TODO
+            ItemMenuResult::NoResponse
+        }
+        None => ItemMenuResult::NoResponse,
+    }
+}
+
+/// Convert index to a letter, starting with 'a' -> 0
+/// ```
+/// assert_eq!(index_to_letter(0), 'a' as FontCharType);
+/// assert_eq!(index_to_letter(25), 'z' as FontCharType);
+/// ```
+fn index_to_letter(i: usize) -> FontCharType {
+    // 0 -> 'a'
+    97 + i as FontCharType
+}
+
+/// Convert letter to a index, starting with 'a' -> 0
+/// ```
+/// assert_eq!(letter_to_index('a' as FontCharType), 0);
+/// assert_eq!(letter_to_index('z' as FontCharType), 25);
+/// ```
+fn letter_to_index(c: FontCharType) -> usize {
+    // 'a' -> 0
+    (c - 97) as usize
+}
+
 fn draw_fill_box(context: &mut BTerm, x: i32, y: i32, width: i32, height: i32, fg: RGB, bg: RGB) {
     let blank = to_cp437(' ');
     for x in x..=(x + width) {
@@ -38,13 +69,6 @@ fn draw_box_bugfix(context: &mut BTerm, x: i32, y: i32, width: i32, height: i32,
 
     context.draw_hollow_box(x, y, width, height, fg, bg);
     draw_fill_box(context, x + 1, y + 1, width - 2, height - 2, fg, bg);
-}
-
-pub fn ui_input(context: &mut BTerm) -> ItemMenuResult {
-    match context.key {
-        Some(VirtualKeyCode::Escape) => ItemMenuResult::Cancel,
-        _ => ItemMenuResult::NoResponse,
-    }
 }
 
 pub fn draw_ui(context: &mut BTerm, world: &World, config: &Config) {
@@ -179,11 +203,6 @@ fn draw_menu_box(
     );
 }
 
-fn ordinal_to_alphabet(i: usize) -> FontCharType {
-    // 0 -> 'a'
-    97 + i as FontCharType
-}
-
 fn draw_select_menu<S: AsRef<str>>(
     context: &mut BTerm,
     style: &MenuBoxStyle,
@@ -222,7 +241,7 @@ fn draw_select_menu<S: AsRef<str>>(
             item_y,
             style.highlight_fg,
             style.highlight_bg,
-            ordinal_to_alphabet(i),
+            index_to_letter(i),
         );
         context.set(inner_x + 2, item_y, style.fg, style.bg, to_cp437(')'));
 
@@ -252,10 +271,27 @@ pub fn draw_inventory(context: &mut BTerm, world: &World, config: &Config) {
                 highlight_bg: config.ui_title.bg,
             },
             "Inventory",
-            "Press ESCAPE to cancel",
+            "ESCAPE to cancel",
             15,
             25 - menu_options.len() as i32 / 2,
             &menu_options,
         );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_index_to_letter() {
+        assert_eq!(index_to_letter(0), 'a' as FontCharType);
+        assert_eq!(index_to_letter(25), 'z' as FontCharType);
+    }
+
+    #[test]
+    fn test_letter_to_index() {
+        assert_eq!(letter_to_index('a' as FontCharType), 0);
+        assert_eq!(letter_to_index('z' as FontCharType), 25);
     }
 }
