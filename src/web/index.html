@@ -6,16 +6,24 @@
         body {
             background-color: #0c0c0c;
         }
+
+        #container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
     </style>
 </head>
 
 <body>
-    <canvas id="canvas" width="640" height="480"></canvas>
+    <div id="container">
+        <canvas id="canvas" width="640" height="480"></canvas>
+    </div>
     <script src="./bracketlib-book.js"></script>
     <script>
         window.addEventListener("load", async () => {
-            await wasm_bindgen("./bracketlib-book_bg.wasm");
-        });
+            await wasm_bindgen("./bracketlib-book_bg.wasm")
+        })
     </script>
 </body>
 
