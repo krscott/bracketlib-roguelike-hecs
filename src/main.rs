@@ -22,7 +22,7 @@ use config::Config;
 use damage_system::damage_system;
 use despawn_entities_system::despawn_entities_system;
 use gamelog::GameLog;
-use hecs::{Entity, World};
+use hecs::{Entity, Fetch, Query, World};
 use map::Map;
 use map_indexing_system::map_indexing_system;
 use melee_combat_system::melee_combat_system;
@@ -38,6 +38,13 @@ pub enum RunState {
     AiTurn,
 }
 
+impl RunState {
+    pub fn from_world(world: &mut World) -> Option<Self> {
+        let mut query = world.query::<&RunState>();
+        query.into_iter().next().map(|(_ent, run_state)| *run_state)
+    }
+}
+
 pub struct State {
     pub world: World,
     pub config: Config,
@@ -51,19 +58,14 @@ impl State {
         let world = &mut self.world;
 
         // Actions
-        visibility_system(world, self.player_entity, self.map_entity);
-        monster_ai_system(
-            world,
-            self.run_state_entity,
-            self.player_entity,
-            self.map_entity,
-        );
+        visibility_system(world);
+        monster_ai_system(world);
         melee_combat_system(world);
         damage_system(world);
 
         // Cleanup
         despawn_entities_system(world);
-        map_indexing_system(world, self.map_entity);
+        map_indexing_system(world);
         clear_commands_system(world);
     }
 
@@ -199,3 +201,21 @@ fn main() -> BError {
 
     main_loop(context, state)
 }
+
+pub fn with_query<Q: Query, F>(world: &World, mut callback: F)
+where
+    F: FnMut(Entity, <<Q as Query>::Fetch as Fetch>::Item),
+{
+    for (entity, components) in world.query::<Q>().into_iter() {
+        callback(entity, components);
+    }
+}
+
+// pub fn with_one<Q: Query, F>(world: &mut World, mut callback: F)
+// where
+//     F: FnMut(Entity, <<Q as Query>::Fetch as Fetch>::Item),
+// {
+//     if let Some((entity, components)) = world.query::<Q>().into_iter().next() {
+//         callback(entity, components);
+//     }
+// }

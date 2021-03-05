@@ -1,29 +1,36 @@
 use std::collections::HashSet;
 
-use bracket_lib::prelude::console;
 use hecs::World;
 
 use crate::{
     command::command_bundle,
     components::{DamageCommand, DespawnCommand, Name},
+    gamelog::GameLog,
     CombatStats,
 };
 
 pub fn damage_system(world: &mut World) {
     let mut despawn_entities = HashSet::new();
 
-    for (_, cmd) in world.query::<&DamageCommand>().into_iter() {
-        let mut query_combat_stats = world.query_one::<&mut CombatStats>(cmd.entity).unwrap();
-        let stats = query_combat_stats.get().unwrap();
+    {
+        let mut log = world.query::<&mut GameLog>();
+        let log = &mut log.into_iter().next().map(|(_ent, log)| log);
 
-        stats.hp = i32::max(0, stats.hp - cmd.amount);
+        for (_, cmd) in world.query::<&DamageCommand>().into_iter() {
+            let mut query_combat_stats = world.query_one::<&mut CombatStats>(cmd.entity).unwrap();
+            let stats = query_combat_stats.get().unwrap();
 
-        if stats.hp <= 0 {
-            despawn_entities.insert(cmd.entity);
+            stats.hp = i32::max(0, stats.hp - cmd.amount);
 
-            if let Ok(mut q) = world.query_one::<&Name>(cmd.entity) {
-                if let Some(Name(name)) = q.get() {
-                    console::log(&format!("{} was slain!", name));
+            if stats.hp <= 0 {
+                despawn_entities.insert(cmd.entity);
+
+                if let Ok(mut q) = world.query_one::<&Name>(cmd.entity) {
+                    if let Some(Name(name)) = q.get() {
+                        if let Some(log) = log {
+                            log.push(format!("{} was slain!", name));
+                        }
+                    }
                 }
             }
         }

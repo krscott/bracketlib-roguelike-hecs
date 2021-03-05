@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use bracket_lib::prelude::*;
-use hecs::Entity;
+use hecs::{Entity, World};
 
 #[derive(Debug)]
 pub struct Position {
@@ -33,6 +33,16 @@ pub struct Renderable {
 
 #[derive(Debug)]
 pub struct Player;
+
+impl Player {
+    pub fn get_entity(world: &mut World) -> Option<Entity> {
+        world
+            .query::<&Player>()
+            .into_iter()
+            .next()
+            .map(|(entity, _)| entity)
+    }
+}
 
 #[derive(Debug)]
 pub struct Viewshed {
