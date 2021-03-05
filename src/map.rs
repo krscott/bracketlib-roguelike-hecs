@@ -324,7 +324,7 @@ impl Algorithm2D for Map {
 }
 
 pub fn draw_map(context: &mut BTerm, world: &World, config: &Config) {
-    if let Some((_, map)) = world.query::<&mut Map>().into_iter().next() {
+    for (_, map) in world.query::<&mut Map>().into_iter() {
         for (i, tile) in map.tiles.iter().enumerate() {
             if map.revealed_tiles[i] {
                 let (x, y) = map.get_coords(i);

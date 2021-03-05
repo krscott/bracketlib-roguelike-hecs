@@ -15,12 +15,16 @@ pub fn default_user_config() -> UserConfig {
         default_fog_bg: "#0c0c0c".into(),
         ui: None,
         ui_hp: Some(TextUserConfig {
-            fg: "#be955c".into(),
+            fg: Some("#be955c".into()),
             bg: None,
         }),
         ui_hp_bar: Some(TextUserConfig {
-            fg: "#9a4f50".into(),
+            fg: Some("#9a4f50".into()),
             bg: None,
+        }),
+        ui_tooltip: Some(TextUserConfig {
+            fg: Some("#c5ccb8".into()),
+            bg: Some("#433455".into()),
         }),
         player: TileUserConfig {
             glyph: '@',
@@ -80,7 +84,7 @@ pub struct TileUserConfig {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TextUserConfig {
-    pub fg: String,
+    pub fg: Option<String>,
     pub bg: Option<String>,
 }
 
@@ -94,6 +98,7 @@ pub struct UserConfig {
     pub ui: Option<TextUserConfig>,
     pub ui_hp: Option<TextUserConfig>,
     pub ui_hp_bar: Option<TextUserConfig>,
+    pub ui_tooltip: Option<TextUserConfig>,
 
     pub player: TileUserConfig,
     pub wall: TileUserConfig,
@@ -160,7 +165,7 @@ impl TextConfig {
                 let TextUserConfig { fg, bg } = value;
 
                 Ok(TextConfig {
-                    fg: parse_color_code(fg)?,
+                    fg: parse_color_code_option(fg, defaults.fg)?,
                     bg: parse_color_code_option(bg, defaults.bg)?,
                 })
             }
@@ -175,6 +180,7 @@ pub struct Config {
     pub ui: TextConfig,
     pub ui_hp: TextConfig,
     pub ui_hp_bar: TextConfig,
+    pub ui_tooltip: TextConfig,
     pub player: TileConfig,
     pub wall: TileConfig,
     pub floor: TileConfig,
@@ -194,6 +200,7 @@ impl TryFrom<UserConfig> for Config {
             ui,
             ui_hp,
             ui_hp_bar,
+            ui_tooltip,
             player,
             wall,
             floor,
@@ -219,6 +226,7 @@ impl TryFrom<UserConfig> for Config {
             ui: TextConfig::try_from_option_user_config(ui, &text_defaults)?,
             ui_hp: TextConfig::try_from_option_user_config(ui_hp, &text_defaults)?,
             ui_hp_bar: TextConfig::try_from_option_user_config(ui_hp_bar, &text_defaults)?,
+            ui_tooltip: TextConfig::try_from_option_user_config(ui_tooltip, &text_defaults)?,
             player: TileConfig::try_from_user_config(player, &tile_defaults)?,
             wall: TileConfig::try_from_user_config(wall, &tile_defaults)?,
             floor: TileConfig::try_from_user_config(floor, &tile_defaults)?,
