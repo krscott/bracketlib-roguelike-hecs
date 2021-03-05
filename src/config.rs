@@ -9,10 +9,14 @@ pub fn default_user_config() -> UserConfig {
     // Colors: https://lospec.com/palette-list/vinik24
 
     UserConfig {
+        post_scanlines: true,
+        post_burnin: Some("#8d6268".into()),
+
         default_fg: "#c5ccb8".into(),
         default_fog_fg: "#9a9a97".into(),
         default_bg: "#0c0c0c".into(),
         default_fog_bg: "#0c0c0c".into(),
+
         ui: None,
         ui_hp: Some(TextUserConfig {
             fg: Some("#be955c".into()),
@@ -26,6 +30,7 @@ pub fn default_user_config() -> UserConfig {
             fg: Some("#c5ccb8".into()),
             bg: Some("#433455".into()),
         }),
+
         player: TileUserConfig {
             glyph: '@',
             fg: Some("#c28d75".into()),
@@ -90,6 +95,9 @@ pub struct TextUserConfig {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UserConfig {
+    pub post_scanlines: bool,
+    pub post_burnin: Option<String>,
+
     pub default_fg: String,
     pub default_fog_fg: String,
     pub default_bg: String,
@@ -176,6 +184,8 @@ impl TextConfig {
 
 #[derive(Debug, Clone)]
 pub struct Config {
+    pub post_scanlines: bool,
+    pub post_burnin: Option<RGB>,
     pub bg: RGB,
     pub ui: TextConfig,
     pub ui_hp: TextConfig,
@@ -193,6 +203,8 @@ impl TryFrom<UserConfig> for Config {
 
     fn try_from(value: UserConfig) -> Result<Self, Self::Error> {
         let UserConfig {
+            post_scanlines,
+            post_burnin,
             default_fg,
             default_fog_fg,
             default_bg,
@@ -221,7 +233,14 @@ impl TryFrom<UserConfig> for Config {
             bg: tile_defaults.bg,
         };
 
+        let post_burnin = match post_burnin {
+            Some(s) => Some(parse_color_code(s)?),
+            None => None,
+        };
+
         Ok(Config {
+            post_scanlines,
+            post_burnin,
             bg: tile_defaults.bg,
             ui: TextConfig::try_from_option_user_config(ui, &text_defaults)?,
             ui_hp: TextConfig::try_from_option_user_config(ui_hp, &text_defaults)?,

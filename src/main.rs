@@ -172,11 +172,19 @@ fn main() -> BError {
     world.spawn((GameLog::new(),));
     GameLog::push_world(&world, format!("Welcome to {}", GAME_TITLE));
 
+    // Create terminal context
+    let mut context = BTermBuilder::simple80x50().with_title(GAME_TITLE).build()?;
+
+    if config.post_scanlines {
+        context.with_post_scanlines(config.post_burnin.is_some());
+    }
+
+    if let Some(color) = config.post_burnin {
+        context.screen_burn_color(color);
+    }
+
     // Create State
     let state = State { world, config };
-
-    // Create terminal context
-    let context = BTermBuilder::simple80x50().with_title(GAME_TITLE).build()?;
 
     // Start main loop
     main_loop(context, state)
