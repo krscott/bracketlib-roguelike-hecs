@@ -10,7 +10,8 @@ impl GameLog {
         let msg: String = msg.into();
 
         for (_, log) in world.query::<&mut GameLog>().into_iter() {
-            log.push(msg.clone());
+            log.push(msg);
+            break;
         }
     }
 

@@ -3,13 +3,15 @@ use bracket_lib::{prelude::Rect, random::RandomNumberGenerator};
 use hecs::{Entity, World};
 
 use crate::{
-    components::{BlocksTile, CombatStats, Monster, Name, Position, Renderable, Viewshed},
+    components::{
+        BlocksTile, CombatStats, HealingItem, Item, Monster, Name, Position, Renderable, Viewshed,
+    },
     config::Config,
     player::Player,
 };
 
 const MAX_MONSTERS: i32 = 4;
-const _MAX_ITEMS: i32 = 2;
+const MAX_ITEMS: i32 = 2;
 
 const SPAWN_ATTEMPTS_TIMEOUT: i32 = 1000;
 
@@ -82,8 +84,33 @@ fn monster<S: Into<String>>(
     ))
 }
 
-pub fn rng_room_of_monsters(world: &mut World, config: &Config, room: &Rect) -> anyhow::Result<()> {
-    let mut monster_spawn_points = Vec::new();
+fn get_random_points_in_rect(
+    rect: &Rect,
+    rng: &mut RandomNumberGenerator,
+    max_points: i32,
+) -> Vec<(i32, i32)> {
+    let mut points = Vec::new();
+
+    for _ in 0..max_points {
+        for _ in 0..SPAWN_ATTEMPTS_TIMEOUT {
+            let x = rect.x1 + rng.roll_dice(1, rect.width());
+            let y = rect.y1 + rng.roll_dice(1, rect.height());
+
+            let point = (x, y);
+
+            if !points.contains(&point) {
+                points.push(point);
+                break;
+            }
+        }
+    }
+
+    points
+}
+
+pub fn rng_room_entities(world: &mut World, config: &Config, room: &Rect) -> anyhow::Result<()> {
+    let monster_spawn_points;
+    let item_spawn_points;
 
     {
         let mut rng = world.query::<&mut RandomNumberGenerator>();
@@ -93,25 +120,29 @@ pub fn rng_room_of_monsters(world: &mut World, config: &Config, room: &Rect) -> 
             .ok_or_else(|| anyhow!("Missing RandomNumberGenerator entity"))?;
 
         let num_monsters = rng.roll_dice(1, MAX_MONSTERS + 2) - 3;
+        let num_items = rng.roll_dice(1, MAX_ITEMS + 2) - 3;
 
-        for _ in 0..num_monsters {
-            for _ in 0..SPAWN_ATTEMPTS_TIMEOUT {
-                let x = room.x1 + rng.roll_dice(1, room.width());
-                let y = room.y1 + rng.roll_dice(1, room.height());
-
-                let point = (x, y);
-
-                if !monster_spawn_points.contains(&point) {
-                    monster_spawn_points.push(point);
-                    break;
-                }
-            }
-        }
+        monster_spawn_points = get_random_points_in_rect(&room, rng, num_monsters);
+        item_spawn_points = get_random_points_in_rect(&room, rng, num_items);
     }
 
     for (x, y) in monster_spawn_points {
         rng_monster(world, config, x, y)?;
     }
 
+    for (x, y) in item_spawn_points {
+        health_potion(world, config, x, y);
+    }
+
     Ok(())
+}
+
+pub fn health_potion(world: &mut World, config: &Config, x: i32, y: i32) -> Entity {
+    world.spawn((
+        Position { x, y },
+        config.health_potion.to_renderable(),
+        Name("Health Potion".into()),
+        Item,
+        HealingItem { heal_amount: 8 },
+    ))
 }

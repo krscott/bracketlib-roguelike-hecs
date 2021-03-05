@@ -66,6 +66,14 @@ pub fn default_user_config() -> UserConfig {
             bg: None,
             fog_bg: None,
         },
+
+        health_potion: TileUserConfig {
+            glyph: '¡',
+            fg: Some("#8b5580".into()),
+            fog_fg: None,
+            bg: None,
+            fog_bg: None,
+        },
     }
 }
 
@@ -113,6 +121,8 @@ pub struct UserConfig {
     pub floor: TileUserConfig,
     pub orc: TileUserConfig,
     pub goblin: TileUserConfig,
+
+    pub health_potion: TileUserConfig,
 }
 
 #[derive(Debug, Clone)]
@@ -204,6 +214,7 @@ pub struct Config {
     pub floor: TileConfig,
     pub orc: TileConfig,
     pub goblin: TileConfig,
+    pub health_potion: TileConfig,
 }
 
 impl TryFrom<UserConfig> for Config {
@@ -226,6 +237,7 @@ impl TryFrom<UserConfig> for Config {
             floor,
             orc,
             goblin,
+            health_potion,
         } = value;
 
         let tile_defaults = TileConfig {
@@ -259,6 +271,7 @@ impl TryFrom<UserConfig> for Config {
             floor: TileConfig::try_from_user_config(floor, &tile_defaults)?,
             orc: TileConfig::try_from_user_config(orc, &tile_defaults)?,
             goblin: TileConfig::try_from_user_config(goblin, &tile_defaults)?,
+            health_potion: TileConfig::try_from_user_config(health_potion, &tile_defaults)?,
         })
     }
 }

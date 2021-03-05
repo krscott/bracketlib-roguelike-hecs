@@ -2,10 +2,12 @@ use bracket_lib::prelude::{BTerm, VirtualKeyCode};
 use hecs::{Entity, World};
 
 use crate::{
-    command::{command_bundle, Command, InitiateAttackCommand},
-    components::{CombatStats, Position, Viewshed},
+    command::{command_bundle, InitiateAttackCommand},
+    components::{CombatStats, Item, Position, Viewshed},
+    gamelog::GameLog,
+    inventory::PickupItemCommand,
     map::Map,
-    RunState, State,
+    RunState,
 };
 
 #[derive(Debug)]
@@ -21,26 +23,66 @@ impl Player {
     }
 }
 
+/// Check for player input and try to move Player entity
+pub fn player_input(world: &mut World, context: &mut BTerm) -> RunState {
+    let is_taking_turn = if let Some(key) = context.key {
+        match key {
+            VirtualKeyCode::Left | VirtualKeyCode::Numpad4 | VirtualKeyCode::H => {
+                try_move_player(world, -1, 0)
+            }
+            VirtualKeyCode::Right | VirtualKeyCode::Numpad6 | VirtualKeyCode::L => {
+                try_move_player(world, 1, 0)
+            }
+            VirtualKeyCode::Up | VirtualKeyCode::Numpad8 | VirtualKeyCode::K => {
+                try_move_player(world, 0, -1)
+            }
+            VirtualKeyCode::Down | VirtualKeyCode::Numpad2 | VirtualKeyCode::J => {
+                try_move_player(world, 0, 1)
+            }
+            VirtualKeyCode::Numpad7 | VirtualKeyCode::Y => try_move_player(world, -1, -1),
+            VirtualKeyCode::Numpad9 | VirtualKeyCode::U => try_move_player(world, 1, -1),
+            VirtualKeyCode::Numpad1 | VirtualKeyCode::B => try_move_player(world, -1, 1),
+            VirtualKeyCode::Numpad3 | VirtualKeyCode::N => try_move_player(world, 1, 1),
+            VirtualKeyCode::Numpad5 | VirtualKeyCode::Period => try_move_player(world, 0, 0),
+            VirtualKeyCode::G => try_pickup_item(world),
+            _ => false,
+        }
+    } else {
+        false
+    };
+
+    if is_taking_turn {
+        RunState::PlayerTurn
+    } else {
+        RunState::AwaitingInput
+    }
+}
+
 /// Move the player if possible
-fn try_move_player(world: &World, dx: i32, dy: i32) -> Vec<(Command, InitiateAttackCommand)> {
+fn try_move_player(world: &mut World, dx: i32, dy: i32) -> bool {
+    let mut is_taking_turn = false;
+    let mut attack_cmd_bundle = None;
+
     if let Some((_, map)) = world.query::<&Map>().into_iter().next() {
-        for (player_entity, (_player, pos, viewshed)) in world
+        'outer: for (player_entity, (_player, pos, viewshed)) in world
             .query::<(&Player, &mut Position, &mut Viewshed)>()
             .into_iter()
         {
             let x = pos.x + dx;
             let y = pos.y + dy;
 
+            // TODO: Remove get_entities_on_tile call, use ECS query
             for entity in map.get_entities_on_tile(x, y) {
                 match world.get::<CombatStats>(*entity) {
                     Ok(_stats) => {
-                        let attack_cmd_bundle = command_bundle(InitiateAttackCommand {
+                        attack_cmd_bundle = Some(command_bundle(InitiateAttackCommand {
                             attacker: player_entity,
                             defender: *entity,
-                        });
+                        }));
+                        is_taking_turn = true;
 
-                        // TODO: Improve flow
-                        return vec![attack_cmd_bundle];
+                        // TODO: Fix program flow
+                        break 'outer;
                     }
                     Err(_) => {}
                 }
@@ -50,37 +92,47 @@ fn try_move_player(world: &World, dx: i32, dy: i32) -> Vec<(Command, InitiateAtt
                 pos.x = x;
                 pos.y = y;
                 viewshed.dirty = true;
+                is_taking_turn = true;
+            }
+
+            break;
+        }
+    }
+
+    if let Some(components) = attack_cmd_bundle {
+        world.spawn(components);
+    }
+
+    is_taking_turn
+}
+
+fn try_pickup_item(world: &mut World) -> bool {
+    let mut item_player_pair = None;
+
+    'outer: for (player_entity, (_player, player_pos)) in
+        world.query::<(&Player, &Position)>().into_iter()
+    {
+        for (item_entity, (_item, item_pos)) in world.query::<(&Item, &Position)>().into_iter() {
+            if player_pos == item_pos {
+                item_player_pair = Some((item_entity, player_entity));
+                break 'outer;
             }
         }
     }
 
-    Vec::new()
-}
+    match item_player_pair {
+        Some((item_entity, player_entity)) => {
+            world.spawn(command_bundle(PickupItemCommand {
+                collector: player_entity,
+                item: item_entity,
+            }));
 
-/// Check for player input and try to move Player entity
-pub fn player_input(state: &mut State, context: &mut BTerm) -> RunState {
-    if let Some(key) = context.key {
-        let delta_xy = match key {
-            VirtualKeyCode::Left | VirtualKeyCode::Numpad4 | VirtualKeyCode::H => Some((-1, 0)),
-            VirtualKeyCode::Right | VirtualKeyCode::Numpad6 | VirtualKeyCode::L => Some((1, 0)),
-            VirtualKeyCode::Up | VirtualKeyCode::Numpad8 | VirtualKeyCode::K => Some((0, -1)),
-            VirtualKeyCode::Down | VirtualKeyCode::Numpad2 | VirtualKeyCode::J => Some((0, 1)),
-            VirtualKeyCode::Numpad7 | VirtualKeyCode::Y => Some((-1, -1)),
-            VirtualKeyCode::Numpad9 | VirtualKeyCode::U => Some((1, -1)),
-            VirtualKeyCode::Numpad1 | VirtualKeyCode::B => Some((-1, 1)),
-            VirtualKeyCode::Numpad3 | VirtualKeyCode::N => Some((1, 1)),
-            VirtualKeyCode::Numpad5 | VirtualKeyCode::Period => Some((0, 0)),
-            _ => None,
-        };
-
-        if let Some((dx, dy)) = delta_xy {
-            let attack_commands = try_move_player(&state.world, dx, dy);
-            state.world.spawn_batch(attack_commands);
-            RunState::PlayerTurn
-        } else {
-            RunState::AwaitingInput
+            true
         }
-    } else {
-        RunState::AwaitingInput
+        None => {
+            GameLog::push_world(world, "There is nothing here to pick up.");
+
+            false
+        }
     }
 }

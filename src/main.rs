@@ -12,6 +12,7 @@ mod damage_system;
 mod despawn_entities_system;
 mod gamelog;
 mod gui;
+mod inventory;
 mod map;
 mod map_indexing_system;
 mod melee_combat_system;
@@ -26,6 +27,7 @@ use config::Config;
 use damage_system::damage_system;
 use despawn_entities_system::despawn_entities_system;
 use gamelog::GameLog;
+use inventory::inventory_system;
 use map::Map;
 use map_indexing_system::map_indexing_system;
 use melee_combat_system::melee_combat_system;
@@ -64,6 +66,7 @@ impl State {
         monster_ai_system(world);
         melee_combat_system(world);
         damage_system(world);
+        inventory_system(world);
 
         // Cleanup
         despawn_entities_system(world);
@@ -87,7 +90,7 @@ impl GameState for State {
                 self.run_systems();
                 RunState::AwaitingInput
             }
-            RunState::AwaitingInput => player_input(self, context),
+            RunState::AwaitingInput => player_input(&mut self.world, context),
             RunState::PlayerTurn => {
                 self.run_systems();
                 RunState::AiTurn
@@ -129,9 +132,10 @@ fn main() -> BError {
     let (player_x, player_y) = map.get_center_of_first_room();
     spawner::player(&mut world, &config, player_x, player_y);
 
-    // Spawn Monsters
+    // Spawn Monsters and Items
+    spawner::health_potion(&mut world, &config, player_x + 1, player_y);
     for room in map.get_rooms().iter().skip(1) {
-        spawner::rng_room_of_monsters(&mut world, &config, room)?;
+        spawner::rng_room_entities(&mut world, &config, room)?;
     }
 
     // Spawn Map

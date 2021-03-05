@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use bracket_lib::prelude::{FontCharType, Point, RGB};
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Position {
     pub x: i32,
     pub y: i32,
@@ -53,6 +53,12 @@ pub struct Monster;
 #[derive(Debug)]
 pub struct Name(pub String);
 
+impl Name {
+    pub fn as_str(&self) -> &str {
+        self.0.as_str()
+    }
+}
+
 impl Display for Name {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.0.fmt(f)
@@ -68,4 +74,12 @@ pub struct CombatStats {
     pub hp: i32,
     pub defense: i32,
     pub power: i32,
+}
+
+#[derive(Debug)]
+pub struct Item;
+
+#[derive(Debug)]
+pub struct HealingItem {
+    pub heal_amount: i32,
 }
