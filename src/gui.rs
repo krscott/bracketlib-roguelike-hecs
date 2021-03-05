@@ -22,16 +22,22 @@ pub enum ItemMenuResult {
     Selected,
 }
 
-/// Fix draw_box bug which fills box with #000000 instead of bg
-fn draw_box_bugfix(context: &mut BTerm, x: i32, y: i32, width: i32, height: i32, fg: RGB, bg: RGB) {
-    context.draw_box(x, y, width, height, fg, bg);
-
+fn draw_fill_box(context: &mut BTerm, x: i32, y: i32, width: i32, height: i32, fg: RGB, bg: RGB) {
     let blank = to_cp437(' ');
-    for x in (x + 1)..(x + width) {
-        for y in (y + 1)..(y + height) {
+    for x in x..=(x + width) {
+        for y in y..=(y + height) {
             context.set(x, y, fg, bg, blank);
         }
     }
+}
+
+/// Fix draw_box bug which fills box with #000000 instead of bg.
+/// See https://github.com/amethyst/bracket-lib/issues/174
+fn draw_box_bugfix(context: &mut BTerm, x: i32, y: i32, width: i32, height: i32, fg: RGB, bg: RGB) {
+    // context.draw_box(x, y, width, height, fg, bg);
+
+    context.draw_hollow_box(x, y, width, height, fg, bg);
+    draw_fill_box(context, x + 1, y + 1, width - 2, height - 2, fg, bg);
 }
 
 pub fn ui_input(context: &mut BTerm) -> ItemMenuResult {
@@ -120,6 +126,110 @@ fn draw_tooltips(context: &mut BTerm, world: &World, config: &Config) {
     }
 }
 
+struct MenuBoxStyle {
+    pad: i32,
+    fg: RGB,
+    bg: RGB,
+    highlight_fg: RGB,
+    highlight_bg: RGB,
+}
+
+fn draw_menu_box(
+    context: &mut BTerm,
+    style: &MenuBoxStyle,
+    title: &str,
+    footer: &str,
+    x: i32,
+    y: i32,
+    min_width: i32,
+    min_height: i32,
+) {
+    const TITLE_OFFSET_X: i32 = 3;
+
+    let width = *[
+        min_width,
+        title.len() as i32 + TITLE_OFFSET_X * 2,
+        footer.len() as i32 + TITLE_OFFSET_X * 2,
+    ]
+    .iter()
+    .max()
+    .unwrap();
+
+    let height = i32::max(2, min_height);
+
+    // Menu box
+    draw_box_bugfix(context, x, y, width, height, style.fg, style.bg);
+
+    // Title
+    context.print_color(
+        x + TITLE_OFFSET_X,
+        y,
+        style.highlight_fg,
+        style.highlight_bg,
+        title,
+    );
+
+    // Footer
+    context.print_color(
+        x + TITLE_OFFSET_X,
+        y + height,
+        style.highlight_fg,
+        style.highlight_bg,
+        footer,
+    );
+}
+
+fn ordinal_to_alphabet(i: usize) -> FontCharType {
+    // 0 -> 'a'
+    97 + i as FontCharType
+}
+
+fn draw_select_menu<S: AsRef<str>>(
+    context: &mut BTerm,
+    style: &MenuBoxStyle,
+    title: &str,
+    footer: &str,
+    x: i32,
+    y: i32,
+    options: &[S],
+) {
+    let inner_x = x + style.pad;
+    let inner_y = y + style.pad;
+    let inner_height = options.len() as i32;
+    let inner_width = 4 + options
+        .iter()
+        .map(|s| s.as_ref().len() as i32)
+        .max()
+        .unwrap_or(0);
+
+    draw_menu_box(
+        context,
+        style,
+        title,
+        footer,
+        x,
+        y,
+        inner_width + style.pad * 2 - 1,
+        inner_height + style.pad * 2 - 1,
+    );
+
+    for (i, s) in options.iter().enumerate() {
+        let item_y = inner_y + i as i32;
+
+        context.set(inner_x, item_y, style.fg, style.bg, to_cp437('('));
+        context.set(
+            inner_x + 1,
+            item_y,
+            style.highlight_fg,
+            style.highlight_bg,
+            ordinal_to_alphabet(i),
+        );
+        context.set(inner_x + 2, item_y, style.fg, style.bg, to_cp437(')'));
+
+        context.print(inner_x + 4, item_y, s.as_ref());
+    }
+}
+
 pub fn draw_inventory(context: &mut BTerm, world: &World, config: &Config) {
     for (player_entity, _) in world.query::<&Player>().into_iter() {
         let mut player_inventory = world.query::<(&InInventory, &Name)>();
@@ -128,49 +238,24 @@ pub fn draw_inventory(context: &mut BTerm, world: &World, config: &Config) {
             .filter(|(_, (in_inventory, _))| in_inventory.owner == player_entity)
             .collect::<Vec<_>>();
 
-        let count = player_inventory.len() as i32;
-
-        let mut y = 25 - (count / 2);
-        draw_box_bugfix(
+        let menu_options = player_inventory
+            .iter()
+            .map(|(_, (_, Name(name)))| name)
+            .collect::<Vec<_>>();
+        draw_select_menu(
             context,
-            15,
-            y - 2,
-            31,
-            count + 3,
-            config.ui.fg,
-            config.ui.bg,
-        );
-        context.print_color(
-            18,
-            y - 2,
-            config.ui_title.fg,
-            config.ui_title.bg,
+            &MenuBoxStyle {
+                pad: 2,
+                fg: config.ui.fg,
+                bg: config.ui.bg,
+                highlight_fg: config.ui_title.fg,
+                highlight_bg: config.ui_title.bg,
+            },
             "Inventory",
+            "Press ESCAPE to cancel",
+            15,
+            25 - menu_options.len() as i32 / 2,
+            &menu_options,
         );
-        context.print_color(
-            18,
-            y + count + 1,
-            config.ui_title.fg,
-            config.ui_title.bg,
-            "ESCAPE to cancel",
-        );
-
-        let mut j = 0;
-        for (_env, (_inv, name)) in player_inventory {
-            context.set(17, y, config.ui.fg, config.ui.bg, to_cp437('('));
-            context.set(
-                18,
-                y,
-                config.ui_title.fg,
-                config.ui_title.bg,
-                97 + j as FontCharType,
-            );
-            context.set(19, y, config.ui.fg, config.ui.bg, to_cp437(')'));
-
-            context.print(21, y, name.as_str());
-
-            y += 1;
-            j += 1;
-        }
     }
 }
