@@ -5,11 +5,11 @@ use crate::{
     components::{Position, Viewshed},
     map::Map,
     player::Player,
-    resource,
+    resource::WorldResources,
 };
 
 pub fn visibility_system(world: &mut World) {
-    let player_entity = resource::get::<Player>(world).ok();
+    let player_entity = world.resource_entity::<Player>().ok();
 
     for (entity, (viewshed, pos)) in world.query::<(&mut Viewshed, &Position)>().into_iter() {
         if viewshed.dirty {

@@ -5,7 +5,7 @@ use crate::{
     components::{Name, Position},
     gamelog::GameLog,
     player::Player,
-    resource,
+    resource::WorldResources,
 };
 
 #[derive(Debug)]
@@ -19,8 +19,8 @@ pub struct PickupItemCommand {
     pub item: Entity,
 }
 
-pub fn inventory_system(world: &mut World) {
-    let player_entity = resource::get::<Player>(world).ok();
+pub fn inventory_system(world: &mut World) -> anyhow::Result<()> {
+    let player_entity = world.resource_entity::<Player>().ok();
 
     let pickup_commands = world
         .query::<&PickupItemCommand>()
@@ -57,7 +57,10 @@ pub fn inventory_system(world: &mut World) {
         if Some(pickup_item_command.collector) == player_entity {
             match world.get::<Name>(pickup_item_command.item) {
                 Ok(item_name) => {
-                    GameLog::push_world(world, format!("You pick up the {}.", item_name.as_str()));
+                    GameLog::resource_push(
+                        world,
+                        format!("You pick up the {}.", item_name.as_str()),
+                    )?;
                 }
                 Err(err) => {
                     console::log(format!(
@@ -69,4 +72,6 @@ pub fn inventory_system(world: &mut World) {
             }
         }
     }
+
+    Ok(())
 }

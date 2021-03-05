@@ -1,4 +1,6 @@
-use hecs::World;
+use hecs::{ComponentError, World};
+
+use crate::resource::WorldResources;
 
 #[derive(Debug)]
 pub struct GameLog {
@@ -6,13 +8,10 @@ pub struct GameLog {
 }
 
 impl GameLog {
-    pub fn push_world<S: Into<String>>(world: &World, msg: S) {
-        let msg: String = msg.into();
+    pub fn resource_push<S: Into<String>>(world: &World, msg: S) -> Result<(), ComponentError> {
+        world.resource::<GameLog>()?.map(|mut gl| gl.push(msg))?;
 
-        for (_, log) in world.query::<&mut GameLog>().into_iter() {
-            log.push(msg);
-            break;
-        }
+        Ok(())
     }
 
     pub fn new() -> Self {

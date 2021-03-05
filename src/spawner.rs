@@ -8,7 +8,7 @@ use crate::{
     },
     config::Config,
     player::Player,
-    resource,
+    resource::WorldResources,
 };
 
 const MAX_MONSTERS: i32 = 4;
@@ -17,8 +17,7 @@ const MAX_ITEMS: i32 = 2;
 const SPAWN_ATTEMPTS_TIMEOUT: i32 = 1000;
 
 pub fn player(world: &mut World, config: &Config, x: i32, y: i32) -> anyhow::Result<Entity> {
-    Ok(resource::spawn(
-        world,
+    Ok(world.spawn_resource(
         Player,
         (
             Name("Player".into()),
@@ -40,8 +39,9 @@ pub fn player(world: &mut World, config: &Config, x: i32, y: i32) -> anyhow::Res
 }
 
 pub fn rng_monster(world: &mut World, config: &Config, x: i32, y: i32) -> anyhow::Result<Entity> {
-    let dice_roll =
-        resource::map::<RandomNumberGenerator, _, _>(world, |mut rng| rng.roll_dice(1, 2))?;
+    let dice_roll = world
+        .resource::<RandomNumberGenerator>()?
+        .map(|mut rng| rng.roll_dice(1, 2))?;
 
     let entity = match dice_roll {
         1 => orc(world, config, x, y),

@@ -6,13 +6,13 @@ use crate::{
     components::{CombatStats, Name},
     gamelog::GameLog,
     player::Player,
-    resource,
+    resource::WorldResources,
 };
 
-pub fn melee_combat_system(world: &mut World) {
+pub fn melee_combat_system(world: &mut World) -> anyhow::Result<()> {
     let mut damage_commands_batch = Vec::new();
 
-    let player_entity = resource::get::<Player>(world).ok();
+    let player_entity = world.resource_entity::<Player>().ok();
 
     for (_, cmd) in world.query::<&InitiateAttackCommand>().into_iter() {
         let mut attacker_query = match world.query_one::<(&CombatStats, &Name)>(cmd.attacker) {
@@ -51,25 +51,27 @@ pub fn melee_combat_system(world: &mut World) {
             };
 
             if damage > 0 {
-                GameLog::push_world(
+                GameLog::resource_push(
                     world,
                     format!("{} hit {} for {} hp.", attacker_name, defender_name, damage),
-                );
+                )?;
                 damage_commands_batch.push(command_bundle(DamageCommand {
                     entity: cmd.defender,
                     amount: damage,
                 }))
             } else {
-                GameLog::push_world(
+                GameLog::resource_push(
                     world,
                     format!(
                         "{} {} unable to hurt {}.",
                         attacker_name, is_are, defender_name
                     ),
-                );
+                )?;
             }
         }
     }
 
     world.spawn_batch(damage_commands_batch);
+
+    Ok(())
 }

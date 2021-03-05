@@ -6,12 +6,13 @@ use crate::{
     components::{Monster, Name, Position, Viewshed},
     map::Map,
     player::Player,
+    resource::WorldResources,
     RunState,
 };
 
 pub fn monster_ai_system(world: &mut World) {
-    match RunState::from_world(world) {
-        Some(RunState::AiTurn) => {}
+    match world.resource_clone::<RunState>() {
+        Ok(RunState::AiTurn) => {}
         _ => return,
     }
 

@@ -8,14 +8,15 @@ use crate::{
     components::Name,
     gamelog::GameLog,
     player::Player,
-    resource, CombatStats,
+    resource::WorldResources,
+    CombatStats,
 };
 
-pub fn damage_system(world: &mut World) {
+pub fn damage_system(world: &mut World) -> anyhow::Result<()> {
     let mut despawn_entities = HashSet::new();
 
     {
-        let player_entity = resource::get::<Player>(world).ok();
+        let player_entity = world.resource_entity::<Player>().ok();
 
         for (_, cmd) in world.query::<&DamageCommand>().into_iter() {
             let mut stats = match world.query_one::<&mut CombatStats>(cmd.entity) {
@@ -36,11 +37,11 @@ pub fn damage_system(world: &mut World) {
                 despawn_entities.insert(cmd.entity);
 
                 if Some(cmd.entity) == player_entity {
-                    GameLog::push_world(world, "You are dead!");
+                    GameLog::resource_push(world, "You are dead!")?;
                 } else {
                     if let Ok(mut q) = world.query_one::<&Name>(cmd.entity) {
                         if let Some(Name(name)) = q.get() {
-                            GameLog::push_world(world, format!("{} was slain!", name));
+                            GameLog::resource_push(world, format!("{} was slain!", name))?;
                         }
                     }
                 }
@@ -53,4 +54,6 @@ pub fn damage_system(world: &mut World) {
             .into_iter()
             .map(|ent| command_bundle(DespawnCommand(ent))),
     );
+
+    Ok(())
 }

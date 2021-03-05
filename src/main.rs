@@ -34,6 +34,7 @@ use map_indexing_system::map_indexing_system;
 use melee_combat_system::melee_combat_system;
 use monster_ai_system::monster_ai_system;
 use player::player_input;
+use resource::WorldResources;
 use visibility_system::visibility_system;
 
 const GAME_TITLE: &'static str = "Rusty-hecs Roguelike";
@@ -47,16 +48,21 @@ pub enum RunState {
     ShowInventory,
 }
 
-impl RunState {
-    pub fn from_world(world: &World) -> Option<Self> {
-        let mut query = world.query::<&RunState>();
-        query.into_iter().next().map(|(_ent, run_state)| *run_state)
-    }
-}
-
 pub struct State {
     pub world: World,
     pub config: Config,
+}
+
+fn report_system_error<T>(res: anyhow::Result<T>) {
+    match res {
+        Ok(_) => {}
+        Err(err) => {
+            console::log(format!("System Error: {}", err));
+
+            // Nightly-only
+            console::log(format!("Backtrace: {}", err.backtrace()));
+        }
+    }
 }
 
 impl State {
@@ -66,9 +72,9 @@ impl State {
         // Actions
         visibility_system(world);
         monster_ai_system(world);
-        melee_combat_system(world);
-        damage_system(world);
-        inventory_system(world);
+        report_system_error(melee_combat_system(world));
+        report_system_error(damage_system(world));
+        report_system_error(inventory_system(world));
 
         // Cleanup
         despawn_entities_system(world);
@@ -81,9 +87,9 @@ impl GameState for State {
     fn tick(&mut self, context: &mut BTerm) {
         context.cls_bg(self.config.bg);
 
-        let run_state = match RunState::from_world(&self.world) {
-            Some(run_state) => run_state,
-            None => {
+        let run_state = match self.world.resource_clone::<RunState>() {
+            Ok(run_state) => run_state,
+            Err(_err) => {
                 console::log("Error: Missing RunState Entity");
                 return;
             }
@@ -94,7 +100,13 @@ impl GameState for State {
                 self.run_systems();
                 RunState::AwaitingInput
             }
-            RunState::AwaitingInput => player_input(context, &mut self.world),
+            RunState::AwaitingInput => match player_input(context, &mut self.world) {
+                Ok(rs) => rs,
+                res @ Err(_) => {
+                    report_system_error(res);
+                    RunState::AwaitingInput
+                }
+            },
             RunState::PlayerTurn => {
                 self.run_systems();
                 RunState::AiTurn
@@ -140,10 +152,10 @@ fn main() -> BError {
     let mut world = World::new();
 
     // Add RNG
-    resource::spawn(&mut world, RandomNumberGenerator::new(), ())?;
+    world.spawn_resource(RandomNumberGenerator::new(), ())?;
 
     // Spawn Run State
-    resource::spawn(&mut world, RunState::PreRun, ())?;
+    world.spawn_resource(RunState::PreRun, ())?;
 
     // Spawn Player
     let (player_x, player_y) = map.get_center_of_first_room();
@@ -156,11 +168,11 @@ fn main() -> BError {
     }
 
     // Spawn Map
-    world.spawn((map,));
+    world.spawn_resource(map, ())?;
 
     // Spawn Game Log
-    world.spawn((GameLog::new(),));
-    GameLog::push_world(&world, format!("Welcome to {}", GAME_TITLE));
+    world.spawn_resource(GameLog::new(), ())?;
+    GameLog::resource_push(&world, format!("Welcome to {}", GAME_TITLE))?;
 
     // Create terminal context
     let mut context = BTermBuilder::simple80x50().with_title(GAME_TITLE).build()?;

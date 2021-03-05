@@ -1,5 +1,5 @@
 use bracket_lib::prelude::{BTerm, VirtualKeyCode};
-use hecs::{Entity, World};
+use hecs::World;
 
 use crate::{
     command::{command_bundle, InitiateAttackCommand},
@@ -7,14 +7,14 @@ use crate::{
     gamelog::GameLog,
     inventory::PickupItemCommand,
     map::Map,
-    resource, RunState,
+    RunState,
 };
 
 #[derive(Debug)]
 pub struct Player;
 
 /// Check for player input and try to move Player entity
-pub fn player_input(context: &mut BTerm, world: &mut World) -> RunState {
+pub fn player_input(context: &mut BTerm, world: &mut World) -> anyhow::Result<RunState> {
     if let Some(key) = context.key {
         match key {
             VirtualKeyCode::Left | VirtualKeyCode::Numpad4 | VirtualKeyCode::H => {
@@ -35,16 +35,16 @@ pub fn player_input(context: &mut BTerm, world: &mut World) -> RunState {
             VirtualKeyCode::Numpad3 | VirtualKeyCode::N => try_move_player(world, 1, 1),
             VirtualKeyCode::Numpad5 | VirtualKeyCode::Period => try_move_player(world, 0, 0),
             VirtualKeyCode::G => try_pickup_item(world),
-            VirtualKeyCode::I => RunState::ShowInventory,
-            _ => RunState::AwaitingInput,
+            VirtualKeyCode::I => Ok(RunState::ShowInventory),
+            _ => Ok(RunState::AwaitingInput),
         }
     } else {
-        RunState::AwaitingInput
+        Ok(RunState::AwaitingInput)
     }
 }
 
 /// Move the player if possible
-fn try_move_player(world: &mut World, dx: i32, dy: i32) -> RunState {
+fn try_move_player(world: &mut World, dx: i32, dy: i32) -> anyhow::Result<RunState> {
     let mut is_taking_turn = false;
     let mut attack_cmd_bundle = None;
 
@@ -88,14 +88,14 @@ fn try_move_player(world: &mut World, dx: i32, dy: i32) -> RunState {
         world.spawn(components);
     }
 
-    if is_taking_turn {
+    Ok(if is_taking_turn {
         RunState::PlayerTurn
     } else {
         RunState::AwaitingInput
-    }
+    })
 }
 
-fn try_pickup_item(world: &mut World) -> RunState {
+fn try_pickup_item(world: &mut World) -> anyhow::Result<RunState> {
     let mut item_player_pair = None;
 
     'outer: for (player_entity, (_player, player_pos)) in
@@ -116,12 +116,12 @@ fn try_pickup_item(world: &mut World) -> RunState {
                 item: item_entity,
             }));
 
-            RunState::PlayerTurn
+            Ok(RunState::PlayerTurn)
         }
         None => {
-            GameLog::push_world(world, "There is nothing here to pick up.");
+            GameLog::resource_push(world, "There is nothing here to pick up.")?;
 
-            RunState::AwaitingInput
+            Ok(RunState::AwaitingInput)
         }
     }
 }

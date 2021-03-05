@@ -6,7 +6,7 @@ use crate::{
 };
 
 pub fn map_indexing_system(world: &World) {
-    if let Some((_, map)) = world.query::<&mut Map>().into_iter().next() {
+    for (_, map) in world.query::<&mut Map>().into_iter() {
         map.reset_blocked_tiles();
         map.clear_content_index();
 
