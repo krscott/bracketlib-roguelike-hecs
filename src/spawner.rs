@@ -8,6 +8,7 @@ use crate::{
     },
     config::Config,
     player::Player,
+    resource,
 };
 
 const MAX_MONSTERS: i32 = 4;
@@ -15,35 +16,32 @@ const MAX_ITEMS: i32 = 2;
 
 const SPAWN_ATTEMPTS_TIMEOUT: i32 = 1000;
 
-pub fn player(world: &mut World, config: &Config, x: i32, y: i32) -> Entity {
-    world.spawn((
+pub fn player(world: &mut World, config: &Config, x: i32, y: i32) -> anyhow::Result<Entity> {
+    Ok(resource::spawn(
+        world,
         Player,
-        Name("Player".into()),
-        Position { x, y },
-        Renderable {
-            glyph: config.player.glyph,
-            fg: config.player.fg,
-            bg: config.player.bg,
-        },
-        Viewshed::with_range(8),
-        CombatStats {
-            max_hp: 30,
-            hp: 30,
-            defense: 2,
-            power: 5,
-        },
-    ))
+        (
+            Name("Player".into()),
+            Position { x, y },
+            Renderable {
+                glyph: config.player.glyph,
+                fg: config.player.fg,
+                bg: config.player.bg,
+            },
+            Viewshed::with_range(8),
+            CombatStats {
+                max_hp: 30,
+                hp: 30,
+                defense: 2,
+                power: 5,
+            },
+        ),
+    )?)
 }
 
 pub fn rng_monster(world: &mut World, config: &Config, x: i32, y: i32) -> anyhow::Result<Entity> {
-    let dice_roll = {
-        let mut rng = world.query::<&mut RandomNumberGenerator>();
-        let (_, rng) = rng
-            .into_iter()
-            .next()
-            .ok_or_else(|| anyhow!("Missing RandomNumberGenerator entity"))?;
-        rng.roll_dice(1, 2)
-    };
+    let dice_roll =
+        resource::map::<RandomNumberGenerator, _, _>(world, |mut rng| rng.roll_dice(1, 2))?;
 
     let entity = match dice_roll {
         1 => orc(world, config, x, y),

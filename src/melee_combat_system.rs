@@ -6,12 +6,13 @@ use crate::{
     components::{CombatStats, Name},
     gamelog::GameLog,
     player::Player,
+    resource,
 };
 
 pub fn melee_combat_system(world: &mut World) {
     let mut damage_commands_batch = Vec::new();
 
-    let player_entity = Player::get_entity(world);
+    let player_entity = resource::get::<Player>(world).ok();
 
     for (_, cmd) in world.query::<&InitiateAttackCommand>().into_iter() {
         let mut attacker_query = match world.query_one::<(&CombatStats, &Name)>(cmd.attacker) {

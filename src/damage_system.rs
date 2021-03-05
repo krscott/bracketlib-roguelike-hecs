@@ -8,14 +8,14 @@ use crate::{
     components::Name,
     gamelog::GameLog,
     player::Player,
-    CombatStats,
+    resource, CombatStats,
 };
 
 pub fn damage_system(world: &mut World) {
     let mut despawn_entities = HashSet::new();
 
     {
-        let player_entity = Player::get_entity(world);
+        let player_entity = resource::get::<Player>(world).ok();
 
         for (_, cmd) in world.query::<&DamageCommand>().into_iter() {
             let mut stats = match world.query_one::<&mut CombatStats>(cmd.entity) {

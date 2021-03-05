@@ -5,6 +5,7 @@ use crate::{
     components::{Name, Position},
     gamelog::GameLog,
     player::Player,
+    resource,
 };
 
 #[derive(Debug)]
@@ -19,7 +20,7 @@ pub struct PickupItemCommand {
 }
 
 pub fn inventory_system(world: &mut World) {
-    let player_entity = Player::get_entity(world);
+    let player_entity = resource::get::<Player>(world).ok();
 
     let pickup_commands = world
         .query::<&PickupItemCommand>()

@@ -18,6 +18,7 @@ mod map_indexing_system;
 mod melee_combat_system;
 mod monster_ai_system;
 mod player;
+mod resource;
 mod spawner;
 mod visibility_system;
 
@@ -139,14 +140,14 @@ fn main() -> BError {
     let mut world = World::new();
 
     // Add RNG
-    world.spawn((RandomNumberGenerator::new(),));
+    resource::spawn(&mut world, RandomNumberGenerator::new(), ())?;
 
     // Spawn Run State
-    world.spawn((RunState::PreRun,));
+    resource::spawn(&mut world, RunState::PreRun, ())?;
 
     // Spawn Player
     let (player_x, player_y) = map.get_center_of_first_room();
-    spawner::player(&mut world, &config, player_x, player_y);
+    spawner::player(&mut world, &config, player_x, player_y)?;
 
     // Spawn Monsters and Items
     spawner::health_potion(&mut world, &config, player_x + 1, player_y);

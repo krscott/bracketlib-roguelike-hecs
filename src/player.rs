@@ -7,21 +7,11 @@ use crate::{
     gamelog::GameLog,
     inventory::PickupItemCommand,
     map::Map,
-    RunState,
+    resource, RunState,
 };
 
 #[derive(Debug)]
 pub struct Player;
-
-impl Player {
-    pub fn get_entity(world: &World) -> Option<Entity> {
-        world
-            .query::<&Player>()
-            .into_iter()
-            .next()
-            .map(|(entity, _)| entity)
-    }
-}
 
 /// Check for player input and try to move Player entity
 pub fn player_input(context: &mut BTerm, world: &mut World) -> RunState {
