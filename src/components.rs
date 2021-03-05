@@ -1,7 +1,6 @@
 use std::fmt::Display;
 
-use bracket_lib::prelude::*;
-use hecs::{Entity, World};
+use bracket_lib::prelude::{FontCharType, Point, RGB};
 
 #[derive(Debug)]
 pub struct Position {
@@ -29,19 +28,6 @@ pub struct Renderable {
     pub glyph: FontCharType,
     pub fg: RGB,
     pub bg: RGB,
-}
-
-#[derive(Debug)]
-pub struct Player;
-
-impl Player {
-    pub fn get_entity(world: &World) -> Option<Entity> {
-        world
-            .query::<&Player>()
-            .into_iter()
-            .next()
-            .map(|(entity, _)| entity)
-    }
 }
 
 #[derive(Debug)]
@@ -83,21 +69,3 @@ pub struct CombatStats {
     pub defense: i32,
     pub power: i32,
 }
-
-#[derive(Debug)]
-pub struct Command;
-
-#[derive(Debug)]
-pub struct InitiateAttackCommand {
-    pub attacker: Entity,
-    pub defender: Entity,
-}
-
-#[derive(Debug)]
-pub struct DamageCommand {
-    pub entity: Entity,
-    pub amount: i32,
-}
-
-#[derive(Debug)]
-pub struct DespawnCommand(pub Entity);

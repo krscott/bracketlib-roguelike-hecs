@@ -1,4 +1,7 @@
-use bracket_lib::prelude::*;
+use bracket_lib::{
+    prelude::{Algorithm2D, BTerm, BaseMap, DistanceAlg, FontCharType, Point, SmallVec, RGB},
+    random::RandomNumberGenerator,
+};
 use hecs::{Entity, World};
 use itertools::Itertools;
 use std::{

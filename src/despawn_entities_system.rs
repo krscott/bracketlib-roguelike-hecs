@@ -1,7 +1,7 @@
 use bracket_lib::prelude::console;
 use hecs::{Entity, World};
 
-use crate::components::DespawnCommand;
+use crate::command::DespawnCommand;
 
 pub fn despawn_entities_system(world: &mut World) {
     let entities = world

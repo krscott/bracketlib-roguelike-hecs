@@ -9,7 +9,7 @@ pub fn default_user_config() -> UserConfig {
     // Colors: https://lospec.com/palette-list/vinik24
 
     UserConfig {
-        post_scanlines: true,
+        post_scanlines: false,
         post_burnin: Some("#8d6268".into()),
 
         default_fg: "#c5ccb8".into(),

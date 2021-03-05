@@ -1,11 +1,24 @@
 use hecs::{Entity, World};
-use thiserror::Error;
 
-use crate::{components::Command, despawn_entities_system};
+use crate::despawn_entities_system;
 
-#[derive(Debug, Error)]
-#[error("Failed to find some entities")]
-pub struct NoSuchEntities(Vec<Entity>);
+#[derive(Debug)]
+pub struct Command;
+
+#[derive(Debug)]
+pub struct InitiateAttackCommand {
+    pub attacker: Entity,
+    pub defender: Entity,
+}
+
+#[derive(Debug)]
+pub struct DamageCommand {
+    pub entity: Entity,
+    pub amount: i32,
+}
+
+#[derive(Debug)]
+pub struct DespawnCommand(pub Entity);
 
 pub fn command_bundle<T>(component: T) -> (Command, T) {
     (Command, component)

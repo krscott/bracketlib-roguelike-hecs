@@ -1,4 +1,8 @@
-use bracket_lib::prelude::*;
+use bracket_lib::{
+    prelude::{console, main_loop, BError, BTerm, BTermBuilder, GameState},
+    random::RandomNumberGenerator,
+};
+use hecs::World;
 
 mod cliopt;
 mod command;
@@ -23,7 +27,6 @@ use config::Config;
 use damage_system::damage_system;
 use despawn_entities_system::despawn_entities_system;
 use gamelog::GameLog;
-use hecs::World;
 use map::Map;
 use map_indexing_system::map_indexing_system;
 use melee_combat_system::melee_combat_system;

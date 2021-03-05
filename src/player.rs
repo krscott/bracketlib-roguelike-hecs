@@ -1,12 +1,25 @@
-use bracket_lib::prelude::*;
-use hecs::World;
+use bracket_lib::prelude::{BTerm, VirtualKeyCode};
+use hecs::{Entity, World};
 
 use crate::{
-    command::command_bundle,
-    components::{CombatStats, Command, InitiateAttackCommand, Player, Position, Viewshed},
+    command::{command_bundle, Command, InitiateAttackCommand},
+    components::{CombatStats, Position, Viewshed},
     map::Map,
     RunState, State,
 };
+
+#[derive(Debug)]
+pub struct Player;
+
+impl Player {
+    pub fn get_entity(world: &World) -> Option<Entity> {
+        world
+            .query::<&Player>()
+            .into_iter()
+            .next()
+            .map(|(entity, _)| entity)
+    }
+}
 
 /// Move the player if possible
 fn try_move_player(world: &World, dx: i32, dy: i32) -> Vec<(Command, InitiateAttackCommand)> {

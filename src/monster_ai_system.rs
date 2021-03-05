@@ -1,10 +1,11 @@
-use bracket_lib::prelude::*;
+use bracket_lib::prelude::{a_star_search, DistanceAlg};
 use hecs::{Entity, World};
 
 use crate::{
-    command::command_bundle,
-    components::{Command, InitiateAttackCommand, Monster, Name, Player, Position, Viewshed},
+    command::{command_bundle, Command, InitiateAttackCommand},
+    components::{Monster, Name, Position, Viewshed},
     map::Map,
+    player::Player,
     RunState,
 };
 

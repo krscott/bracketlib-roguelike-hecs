@@ -3,8 +3,9 @@ use bracket_lib::random::RandomNumberGenerator;
 use hecs::{Entity, World};
 
 use crate::{
-    components::{BlocksTile, CombatStats, Monster, Name, Player, Position, Renderable, Viewshed},
+    components::{BlocksTile, CombatStats, Monster, Name, Position, Renderable, Viewshed},
     config::Config,
+    player::Player,
 };
 
 pub fn player(world: &mut World, config: &Config, x: i32, y: i32) -> Entity {

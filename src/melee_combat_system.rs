@@ -2,9 +2,10 @@ use bracket_lib::prelude::console;
 use hecs::World;
 
 use crate::{
-    command::command_bundle,
-    components::{CombatStats, DamageCommand, InitiateAttackCommand, Name, Player},
+    command::{command_bundle, DamageCommand, InitiateAttackCommand},
+    components::{CombatStats, Name},
     gamelog::GameLog,
+    player::Player,
 };
 
 pub fn melee_combat_system(world: &mut World) {

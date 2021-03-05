@@ -2,10 +2,11 @@ use bracket_lib::prelude::{to_cp437, BTerm, RGB};
 use hecs::World;
 
 use crate::{
-    components::{CombatStats, Name, Player},
+    components::{CombatStats, Name},
     config::Config,
     gamelog::GameLog,
     map::Map,
+    player::Player,
 };
 
 pub const MAP_VIEW_WIDTH: usize = 80;

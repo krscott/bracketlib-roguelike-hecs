@@ -4,9 +4,10 @@ use bracket_lib::prelude::console;
 use hecs::World;
 
 use crate::{
-    command::command_bundle,
-    components::{DamageCommand, DespawnCommand, Name, Player},
+    command::{command_bundle, DamageCommand, DespawnCommand},
+    components::Name,
     gamelog::GameLog,
+    player::Player,
     CombatStats,
 };
 

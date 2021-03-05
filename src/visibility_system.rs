@@ -2,8 +2,9 @@ use bracket_lib::prelude::field_of_view;
 use hecs::World;
 
 use crate::{
-    components::{Player, Position, Viewshed},
+    components::{Position, Viewshed},
     map::Map,
+    player::Player,
 };
 
 pub fn visibility_system(world: &mut World) {
