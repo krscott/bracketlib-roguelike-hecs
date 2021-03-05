@@ -140,7 +140,7 @@ impl Map {
         &self.rooms
     }
 
-    pub fn get_player_starting_position(&self) -> (i32, i32) {
+    pub fn get_center_of_first_room(&self) -> (i32, i32) {
         match self.rooms.first() {
             Some(room) => room.center(),
             None => (self.width / 2, self.height / 2),

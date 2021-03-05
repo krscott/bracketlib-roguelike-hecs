@@ -127,15 +127,12 @@ fn main() -> BError {
     world.spawn((RunState::PreRun,));
 
     // Spawn Player
-    let (player_x, player_y) = map.get_player_starting_position();
+    let (player_x, player_y) = map.get_center_of_first_room();
     spawner::player(&mut world, &config, player_x, player_y);
 
     // Spawn Monsters
-    for room in map.get_rooms() {
-        let (x, y) = room.center();
-        if (x, y) != (player_x, player_y) {
-            spawner::rng_monster(&mut world, &config, x, y)?;
-        }
+    for room in map.get_rooms().iter().skip(1) {
+        spawner::rng_room_of_monsters(&mut world, &config, room)?;
     }
 
     // Spawn Map

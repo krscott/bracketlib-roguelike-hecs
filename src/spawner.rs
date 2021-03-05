@@ -6,7 +6,13 @@ use crate::{
     components::{BlocksTile, CombatStats, Monster, Name, Position, Renderable, Viewshed},
     config::Config,
     player::Player,
+    rect::Rect,
 };
+
+const MAX_MONSTERS: i32 = 4;
+const _MAX_ITEMS: i32 = 2;
+
+const SPAWN_ATTEMPTS_TIMEOUT: i32 = 1000;
 
 pub fn player(world: &mut World, config: &Config, x: i32, y: i32) -> Entity {
     world.spawn((
@@ -75,4 +81,38 @@ fn monster<S: Into<String>>(
             power: 4,
         },
     ))
+}
+
+pub fn rng_room_of_monsters(world: &mut World, config: &Config, room: &Rect) -> anyhow::Result<()> {
+    let mut monster_spawn_points = Vec::new();
+
+    {
+        let mut rng = world.query::<&mut RandomNumberGenerator>();
+        let (_, rng) = rng
+            .into_iter()
+            .next()
+            .ok_or_else(|| anyhow!("Missing RandomNumberGenerator entity"))?;
+
+        let num_monsters = rng.roll_dice(1, MAX_MONSTERS + 2) - 3;
+
+        for _ in 0..num_monsters {
+            for _ in 0..SPAWN_ATTEMPTS_TIMEOUT {
+                let x = room.x1 + rng.roll_dice(1, room.width());
+                let y = room.y1 + rng.roll_dice(1, room.height());
+
+                let point = (x, y);
+
+                if !monster_spawn_points.contains(&point) {
+                    monster_spawn_points.push(point);
+                    break;
+                }
+            }
+        }
+    }
+
+    for (x, y) in monster_spawn_points {
+        rng_monster(world, config, x, y)?;
+    }
+
+    Ok(())
 }
