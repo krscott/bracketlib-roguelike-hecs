@@ -1,13 +1,15 @@
-use bracket_lib::prelude::{to_cp437, BTerm, FontCharType, VirtualKeyCode, RGB};
+use bracket_lib::prelude::{letter_to_option, to_cp437, BTerm, FontCharType, VirtualKeyCode, RGB};
 use hecs::World;
 
 use crate::{
+    command::WorldCommands,
     components::{CombatStats, Name},
     config::Config,
     gamelog::GameLog,
-    inventory::InInventory,
+    inventory::{get_inventory_list, UseItemCommand},
     map::Map,
     player::Player,
+    resource::WorldResources,
 };
 
 pub const MAP_VIEW_WIDTH: usize = 80;
@@ -22,12 +24,25 @@ pub enum ItemMenuResult {
     Selected,
 }
 
-pub fn ui_input(context: &mut BTerm) -> ItemMenuResult {
+pub fn ui_input(context: &mut BTerm, world: &mut World) -> ItemMenuResult {
     match context.key {
         Some(VirtualKeyCode::Escape) => ItemMenuResult::Cancel,
         Some(key) => {
-            //TODO
-            ItemMenuResult::NoResponse
+            if let Ok(player) = world.resource_entity::<Player>() {
+                let inventory = get_inventory_list(world, player);
+                let selection = letter_to_option(key);
+                if let Some((item, _)) = inventory.get(selection as usize) {
+                    world.spawn_command(UseItemCommand {
+                        user: player,
+                        item: *item,
+                    });
+                    ItemMenuResult::Selected
+                } else {
+                    ItemMenuResult::NoResponse
+                }
+            } else {
+                ItemMenuResult::NoResponse
+            }
         }
         None => ItemMenuResult::NoResponse,
     }
@@ -41,16 +56,6 @@ pub fn ui_input(context: &mut BTerm) -> ItemMenuResult {
 fn index_to_letter(i: usize) -> FontCharType {
     // 0 -> 'a'
     97 + i as FontCharType
-}
-
-/// Convert letter to a index, starting with 'a' -> 0
-/// ```
-/// assert_eq!(letter_to_index('a' as FontCharType), 0);
-/// assert_eq!(letter_to_index('z' as FontCharType), 25);
-/// ```
-fn letter_to_index(c: FontCharType) -> usize {
-    // 'a' -> 0
-    (c - 97) as usize
 }
 
 fn draw_fill_box(context: &mut BTerm, x: i32, y: i32, width: i32, height: i32, fg: RGB, bg: RGB) {
@@ -250,17 +255,12 @@ fn draw_select_menu<S: AsRef<str>>(
 }
 
 pub fn draw_inventory(context: &mut BTerm, world: &World, config: &Config) {
-    for (player_entity, _) in world.query::<&Player>().into_iter() {
-        let mut player_inventory = world.query::<(&InInventory, &Name)>();
-        let player_inventory = player_inventory
+    if let Ok(player) = world.resource_entity::<Player>() {
+        let menu_options = get_inventory_list(world, player)
             .into_iter()
-            .filter(|(_, (in_inventory, _))| in_inventory.owner == player_entity)
+            .map(|(_, name)| name)
             .collect::<Vec<_>>();
 
-        let menu_options = player_inventory
-            .iter()
-            .map(|(_, (_, Name(name)))| name)
-            .collect::<Vec<_>>();
         draw_select_menu(
             context,
             &MenuBoxStyle {
@@ -287,11 +287,5 @@ mod tests {
     fn test_index_to_letter() {
         assert_eq!(index_to_letter(0), 'a' as FontCharType);
         assert_eq!(index_to_letter(25), 'z' as FontCharType);
-    }
-
-    #[test]
-    fn test_letter_to_index() {
-        assert_eq!(letter_to_index('a' as FontCharType), 0);
-        assert_eq!(letter_to_index('z' as FontCharType), 25);
     }
 }

@@ -4,7 +4,7 @@ use bracket_lib::prelude::console;
 use hecs::World;
 
 use crate::{
-    command::{command_bundle, DamageCommand, DespawnCommand},
+    command::{DamageCommand, DespawnCommand, WorldCommands},
     components::Name,
     gamelog::GameLog,
     player::Player,
@@ -49,11 +49,7 @@ pub fn damage_system(world: &mut World) -> anyhow::Result<()> {
         }
     }
 
-    world.spawn_batch(
-        despawn_entities
-            .into_iter()
-            .map(|ent| command_bundle(DespawnCommand(ent))),
-    );
+    world.spawn_batch_commands(despawn_entities.into_iter().map(|ent| DespawnCommand(ent)));
 
     Ok(())
 }

@@ -2,7 +2,7 @@ use bracket_lib::prelude::{BTerm, VirtualKeyCode};
 use hecs::World;
 
 use crate::{
-    command::{command_bundle, InitiateAttackCommand},
+    command::{InitiateAttackCommand, WorldCommands},
     components::{CombatStats, Item, Position, Viewshed},
     gamelog::GameLog,
     inventory::PickupItemCommand,
@@ -60,10 +60,10 @@ fn try_move_player(world: &mut World, dx: i32, dy: i32) -> anyhow::Result<RunSta
             for entity in map.get_entities_on_tile(x, y) {
                 match world.get::<CombatStats>(*entity) {
                     Ok(_stats) => {
-                        attack_cmd_bundle = Some(command_bundle(InitiateAttackCommand {
+                        attack_cmd_bundle = Some(InitiateAttackCommand {
                             attacker: player_entity,
                             defender: *entity,
-                        }));
+                        });
                         is_taking_turn = true;
 
                         // TODO: Fix program flow
@@ -85,7 +85,7 @@ fn try_move_player(world: &mut World, dx: i32, dy: i32) -> anyhow::Result<RunSta
     }
 
     if let Some(components) = attack_cmd_bundle {
-        world.spawn(components);
+        world.spawn_command(components);
     }
 
     Ok(if is_taking_turn {
@@ -111,10 +111,10 @@ fn try_pickup_item(world: &mut World) -> anyhow::Result<RunState> {
 
     match item_player_pair {
         Some((item_entity, player_entity)) => {
-            world.spawn(command_bundle(PickupItemCommand {
+            world.spawn_command(PickupItemCommand {
                 collector: player_entity,
                 item: item_entity,
-            }));
+            });
 
             Ok(RunState::PlayerTurn)
         }

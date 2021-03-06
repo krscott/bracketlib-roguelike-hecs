@@ -22,13 +22,13 @@ mod resource;
 mod spawner;
 mod visibility_system;
 
-use command::clear_commands_system;
+use command::WorldCommands;
 use components::CombatStats;
 use config::Config;
 use damage_system::damage_system;
 use despawn_entities_system::despawn_entities_system;
 use gamelog::GameLog;
-use inventory::inventory_system;
+use inventory::{pickup_item_system, use_item_system};
 use map::Map;
 use map_indexing_system::map_indexing_system;
 use melee_combat_system::melee_combat_system;
@@ -70,16 +70,17 @@ impl State {
         let world = &mut self.world;
 
         // Actions
+        report_system_error(use_item_system(world));
         visibility_system(world);
         monster_ai_system(world);
         report_system_error(melee_combat_system(world));
         report_system_error(damage_system(world));
-        report_system_error(inventory_system(world));
+        report_system_error(pickup_item_system(world));
 
         // Cleanup
         despawn_entities_system(world);
         map_indexing_system(world);
-        clear_commands_system(world);
+        world.clear_commands();
     }
 }
 
@@ -117,10 +118,10 @@ impl GameState for State {
             }
             RunState::ShowInventory => {
                 // TODO: Separate UI and input response
-                match gui::ui_input(context) {
+                match gui::ui_input(context, &mut self.world) {
                     gui::ItemMenuResult::Cancel => RunState::AwaitingInput,
                     gui::ItemMenuResult::NoResponse => RunState::ShowInventory,
-                    gui::ItemMenuResult::Selected => RunState::ShowInventory,
+                    gui::ItemMenuResult::Selected => RunState::PlayerTurn,
                 }
             }
         };

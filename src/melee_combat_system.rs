@@ -2,7 +2,7 @@ use bracket_lib::prelude::console;
 use hecs::World;
 
 use crate::{
-    command::{command_bundle, DamageCommand, InitiateAttackCommand},
+    command::{DamageCommand, InitiateAttackCommand, WorldCommands},
     components::{CombatStats, Name},
     gamelog::GameLog,
     player::Player,
@@ -55,10 +55,10 @@ pub fn melee_combat_system(world: &mut World) -> anyhow::Result<()> {
                     world,
                     format!("{} hit {} for {} hp.", attacker_name, defender_name, damage),
                 )?;
-                damage_commands_batch.push(command_bundle(DamageCommand {
+                damage_commands_batch.push(DamageCommand {
                     entity: cmd.defender,
                     amount: damage,
-                }))
+                })
             } else {
                 GameLog::resource_push(
                     world,
@@ -71,7 +71,7 @@ pub fn melee_combat_system(world: &mut World) -> anyhow::Result<()> {
         }
     }
 
-    world.spawn_batch(damage_commands_batch);
+    world.spawn_batch_commands(damage_commands_batch);
 
     Ok(())
 }

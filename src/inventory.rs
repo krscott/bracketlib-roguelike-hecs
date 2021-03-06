@@ -19,7 +19,13 @@ pub struct PickupItemCommand {
     pub item: Entity,
 }
 
-pub fn inventory_system(world: &mut World) -> anyhow::Result<()> {
+#[derive(Debug)]
+pub struct UseItemCommand {
+    pub user: Entity,
+    pub item: Entity,
+}
+
+pub fn pickup_item_system(world: &mut World) -> anyhow::Result<()> {
     let player_entity = world.resource_entity::<Player>().ok();
 
     let pickup_commands = world
@@ -74,4 +80,42 @@ pub fn inventory_system(world: &mut World) -> anyhow::Result<()> {
     }
 
     Ok(())
+}
+
+pub fn use_item_system(world: &mut World) -> anyhow::Result<()> {
+    let player_entity = world.resource_entity::<Player>().ok();
+
+    for (_, UseItemCommand { user, item }) in world.query::<&UseItemCommand>().into_iter() {
+        let mut item_name = match world.query_one::<&Name>(*item) {
+            Ok(query) => query,
+            Err(err) => {
+                console::log(format!(
+                    "Error: Failed to get item {} name: {}",
+                    item.id(),
+                    err
+                ));
+                continue;
+            }
+        };
+
+        let Name(item_name) = item_name.get().expect("Unfiltered query");
+
+        if Some(*user) == player_entity {
+            GameLog::resource_push(
+                world,
+                format!("You want to use the {}, but don't know how!", item_name),
+            )?;
+        }
+    }
+
+    Ok(())
+}
+
+pub fn get_inventory_list(world: &World, owner: Entity) -> Vec<(Entity, String)> {
+    let mut inventory = world.query::<(&InInventory, &Name)>();
+    inventory
+        .into_iter()
+        .filter(|(_, (in_inventory, _))| in_inventory.owner == owner)
+        .map(|(entity, (_, Name(name)))| (entity, name.to_string()))
+        .collect::<Vec<_>>()
 }

@@ -13,7 +13,7 @@ pub fn despawn_entities_system(world: &mut World) {
     despawn_entities(world, entities);
 }
 
-pub fn despawn_entities(world: &mut World, entities: Vec<Entity>) {
+fn despawn_entities(world: &mut World, entities: Vec<Entity>) {
     for entity in entities {
         if let Err(_) = world.despawn(entity) {
             console::log(format!("Tried to despawn missing entity: {}", entity.id()));

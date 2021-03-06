@@ -2,7 +2,7 @@ use bracket_lib::prelude::{a_star_search, DistanceAlg};
 use hecs::{Entity, World};
 
 use crate::{
-    command::{command_bundle, Command, InitiateAttackCommand},
+    command::{InitiateAttackCommand, WorldCommands},
     components::{Monster, Name, Position, Viewshed},
     map::Map,
     player::Player,
@@ -46,11 +46,11 @@ pub fn monster_ai_system(world: &mut World) {
         }
     }
 
-    world.spawn_batch(attack_cmd_batch);
+    world.spawn_batch_commands(attack_cmd_batch);
 }
 
 fn monster_ai_to_player(
-    attack_cmd_batch: &mut Vec<(Command, InitiateAttackCommand)>,
+    attack_cmd_batch: &mut Vec<InitiateAttackCommand>,
     map: &mut Map,
     monster_entity: Entity,
     monster_pos: &mut Position,
@@ -66,10 +66,10 @@ fn monster_ai_to_player(
         let distance_to_player =
             DistanceAlg::Pythagoras.distance2d(monster_pos.to_point(), player_pos.to_point());
         if distance_to_player < 1.5 {
-            attack_cmd_batch.push(command_bundle(InitiateAttackCommand {
+            attack_cmd_batch.push(InitiateAttackCommand {
                 attacker: monster_entity,
                 defender: player_entity,
-            }));
+            });
         } else {
             if let Some(start) = map.get_index(monster_pos.x, monster_pos.y) {
                 let nav = a_star_search(start, player_pos_index, &mut *map);
