@@ -335,10 +335,13 @@ pub fn draw_map(context: &mut BTerm, world: &World, config: &Config) {
             }
         }
 
-        for (_, (pos, render)) in world.query::<(&Position, &Renderable)>().into_iter() {
-            if map.is_tile_visible(pos.x, pos.y) {
-                context.set(pos.x, pos.y, render.fg, render.bg, render.glyph);
-            }
+        for (_, (pos, render)) in world
+            .query::<(&Position, &Renderable)>()
+            .into_iter()
+            .filter(|(_, (pos, _))| map.is_tile_visible(pos.x, pos.y))
+            .sorted_by_key(|(_, (_, r))| r.render_order)
+        {
+            context.set(pos.x, pos.y, render.fg, render.bg, render.glyph);
         }
     }
 }

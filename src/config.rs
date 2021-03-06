@@ -154,22 +154,13 @@ impl TileConfig {
         })
     }
 
-    pub fn into_renderable(self) -> Renderable {
+    pub fn to_renderable_with_render_order(&self, render_order: i32) -> Renderable {
         Renderable {
             glyph: self.glyph,
             fg: self.fg,
             bg: self.bg,
+            render_order,
         }
-    }
-
-    pub fn to_renderable(&self) -> Renderable {
-        self.clone().into_renderable()
-    }
-}
-
-impl From<TileConfig> for Renderable {
-    fn from(value: TileConfig) -> Self {
-        value.into_renderable()
     }
 }
 

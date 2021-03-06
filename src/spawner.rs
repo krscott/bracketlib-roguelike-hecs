@@ -7,17 +7,19 @@ const MAX_ITEMS: i32 = 2;
 
 const SPAWN_ATTEMPTS_TIMEOUT: i32 = 1000;
 
+const RENDER_ORDER_PLAYER: i32 = 0;
+const RENDER_ORDER_MONSTER: i32 = -1;
+const RENDER_ORDER_ITEM: i32 = -2;
+
 pub fn player(world: &mut World, config: &Config, x: i32, y: i32) -> anyhow::Result<Entity> {
     Ok(world.spawn_resource(
         Player,
         (
             Name("Player".into()),
             Position { x, y },
-            Renderable {
-                glyph: config.player.glyph,
-                fg: config.player.fg,
-                bg: config.player.bg,
-            },
+            config
+                .player
+                .to_renderable_with_render_order(RENDER_ORDER_PLAYER),
             Viewshed::with_range(8),
             CombatStats {
                 max_hp: 30,
@@ -43,11 +45,27 @@ pub fn rng_monster(world: &mut World, config: &Config, x: i32, y: i32) -> anyhow
 }
 
 fn orc(world: &mut World, config: &Config, x: i32, y: i32) -> Entity {
-    monster(world, x, y, config.orc.to_renderable(), "Orc")
+    monster(
+        world,
+        x,
+        y,
+        config
+            .orc
+            .to_renderable_with_render_order(RENDER_ORDER_MONSTER),
+        "Orc",
+    )
 }
 
 fn goblin(world: &mut World, config: &Config, x: i32, y: i32) -> Entity {
-    monster(world, x, y, config.goblin.to_renderable(), "Goblin")
+    monster(
+        world,
+        x,
+        y,
+        config
+            .goblin
+            .to_renderable_with_render_order(RENDER_ORDER_MONSTER),
+        "Goblin",
+    )
 }
 
 fn monster<S: Into<String>>(
@@ -129,7 +147,9 @@ pub fn rng_room_entities(world: &mut World, config: &Config, room: &Rect) -> any
 pub fn health_potion(world: &mut World, config: &Config, x: i32, y: i32) -> Entity {
     world.spawn((
         Position { x, y },
-        config.health_potion.to_renderable(),
+        config
+            .health_potion
+            .to_renderable_with_render_order(RENDER_ORDER_ITEM),
         Name("Health Potion".into()),
         Item,
         HealingItem { heal_amount: 8 },
