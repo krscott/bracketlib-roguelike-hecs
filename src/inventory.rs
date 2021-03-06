@@ -1,4 +1,4 @@
-use crate::prelude::*;
+use crate::{despawn_entities_system::queue_despawn_batch, prelude::*};
 
 pub fn pickup_item_system(world: &mut World) -> anyhow::Result<()> {
     let player_entity = world.resource_entity::<Player>().ok();
@@ -60,6 +60,8 @@ pub fn pickup_item_system(world: &mut World) -> anyhow::Result<()> {
 pub fn use_item_system(world: &mut World) -> anyhow::Result<()> {
     let player_entity = world.resource_entity::<Player>().ok();
 
+    let mut items_to_despawn = Vec::new();
+
     for (_, UseItemCommand { user, item }) in world.query::<&UseItemCommand>().into_iter() {
         let mut item_name = match world.query_one::<&Name>(*item) {
             Ok(query) => query,
@@ -81,7 +83,11 @@ pub fn use_item_system(world: &mut World) -> anyhow::Result<()> {
                 format!("You want to use the {}, but don't know how!", item_name),
             )?;
         }
+
+        items_to_despawn.push(*item);
     }
+
+    queue_despawn_batch(world, items_to_despawn);
 
     Ok(())
 }

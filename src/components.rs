@@ -95,9 +95,6 @@ pub struct DamageCommand {
 }
 
 #[derive(Debug)]
-pub struct DespawnCommand(pub Entity);
-
-#[derive(Debug)]
 pub struct Player;
 
 #[derive(Debug)]

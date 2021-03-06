@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::prelude::*;
+use crate::{despawn_entities_system::queue_despawn_batch, prelude::*};
 
 pub fn damage_system(world: &mut World) -> anyhow::Result<()> {
     let mut despawn_entities = HashSet::new();
@@ -39,7 +39,7 @@ pub fn damage_system(world: &mut World) -> anyhow::Result<()> {
         }
     }
 
-    world.spawn_batch_commands(despawn_entities.into_iter().map(|ent| DespawnCommand(ent)));
+    queue_despawn_batch(world, despawn_entities);
 
     Ok(())
 }
