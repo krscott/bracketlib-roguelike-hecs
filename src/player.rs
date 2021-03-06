@@ -23,6 +23,7 @@ pub fn player_input(context: &mut BTerm, world: &mut World) -> anyhow::Result<Ru
             VirtualKeyCode::Numpad5 | VirtualKeyCode::Period => try_move_player(world, 0, 0),
             VirtualKeyCode::G => try_pickup_item(world),
             VirtualKeyCode::I => Ok(RunState::ShowInventory),
+            VirtualKeyCode::D => Ok(RunState::ShowDropMenu),
             _ => Ok(RunState::AwaitingInput),
         }
     } else {

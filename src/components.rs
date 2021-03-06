@@ -113,3 +113,9 @@ pub struct UseItemCommand {
     pub user: Entity,
     pub item: Entity,
 }
+
+#[derive(Debug, Clone, Copy)]
+pub struct DropItemCommand {
+    pub dropper: Entity,
+    pub item: Entity,
+}

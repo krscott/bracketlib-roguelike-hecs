@@ -12,27 +12,46 @@ pub enum ItemMenuResult {
     Selected,
 }
 
-pub fn ui_input(context: &mut BTerm, world: &mut World) -> ItemMenuResult {
+pub fn ui_inventory_use_input(context: &mut BTerm, world: &mut World) -> ItemMenuResult {
+    let (action, selected) = ui_inventory_menu_input(context, world);
+
+    if let Some((user, item)) = selected {
+        world.spawn_command(UseItemCommand { user, item });
+    }
+
+    action
+}
+
+pub fn ui_inventory_drop_input(context: &mut BTerm, world: &mut World) -> ItemMenuResult {
+    let (action, selected) = ui_inventory_menu_input(context, world);
+
+    if let Some((dropper, item)) = selected {
+        world.spawn_command(DropItemCommand { dropper, item });
+    }
+
+    action
+}
+
+fn ui_inventory_menu_input(
+    context: &mut BTerm,
+    world: &mut World,
+) -> (ItemMenuResult, Option<(Entity, Entity)>) {
     match context.key {
-        Some(VirtualKeyCode::Escape) => ItemMenuResult::Cancel,
+        Some(VirtualKeyCode::Escape) => (ItemMenuResult::Cancel, None),
         Some(key) => {
             if let Ok(player) = world.resource_entity::<Player>() {
                 let inventory = get_inventory_list(world, player);
                 let selection = letter_to_option(key);
                 if let Some((item, _)) = inventory.get(selection as usize) {
-                    world.spawn_command(UseItemCommand {
-                        user: player,
-                        item: *item,
-                    });
-                    ItemMenuResult::Selected
+                    (ItemMenuResult::Selected, Some((player, *item)))
                 } else {
-                    ItemMenuResult::NoResponse
+                    (ItemMenuResult::NoResponse, None)
                 }
             } else {
-                ItemMenuResult::NoResponse
+                (ItemMenuResult::NoResponse, None)
             }
         }
-        None => ItemMenuResult::NoResponse,
+        None => (ItemMenuResult::NoResponse, None),
     }
 }
 
@@ -242,7 +261,7 @@ fn draw_select_menu<S: AsRef<str>>(
     }
 }
 
-pub fn draw_inventory(context: &mut BTerm, world: &World, config: &Config) {
+pub fn draw_inventory_menu(context: &mut BTerm, world: &World, config: &Config, title: &str) {
     if let Ok(player) = world.resource_entity::<Player>() {
         let menu_options = get_inventory_list(world, player)
             .into_iter()
@@ -258,7 +277,7 @@ pub fn draw_inventory(context: &mut BTerm, world: &World, config: &Config) {
                 highlight_fg: config.ui_title.fg,
                 highlight_bg: config.ui_title.bg,
             },
-            "Inventory",
+            title,
             "ESCAPE to cancel",
             15,
             25 - menu_options.len() as i32 / 2,

@@ -1,7 +1,7 @@
 use crate::{despawn_entities_system::queue_despawn_batch, prelude::*};
 
 pub fn pickup_item_system(world: &mut World) -> anyhow::Result<()> {
-    let player_entity = world.resource_entity::<Player>().ok();
+    let player = world.resource_entity::<Player>().ok();
 
     let pickup_commands = world
         .query::<&PickupItemCommand>()
@@ -35,7 +35,7 @@ pub fn pickup_item_system(world: &mut World) -> anyhow::Result<()> {
             continue;
         }
 
-        if Some(pickup_item_command.collector) == player_entity {
+        if Some(pickup_item_command.collector) == player {
             match world.get::<Name>(pickup_item_command.item) {
                 Ok(item_name) => {
                     GameLog::resource_push(
@@ -58,7 +58,7 @@ pub fn pickup_item_system(world: &mut World) -> anyhow::Result<()> {
 }
 
 pub fn use_item_system(world: &mut World) -> anyhow::Result<()> {
-    let player_entity = world.resource_entity::<Player>().ok();
+    let player = world.resource_entity::<Player>().ok();
 
     let mut items_to_despawn = Vec::new();
 
@@ -66,7 +66,7 @@ pub fn use_item_system(world: &mut World) -> anyhow::Result<()> {
         let user = *user;
         let item = *item;
 
-        let is_user_player = Some(user) == player_entity;
+        let is_user_player = Some(user) == player;
 
         let mut item_name = match world.query_one::<&Name>(item) {
             Ok(query) => query,
@@ -103,6 +103,32 @@ pub fn use_item_system(world: &mut World) -> anyhow::Result<()> {
     }
 
     queue_despawn_batch(world, items_to_despawn);
+
+    Ok(())
+}
+
+pub fn drop_item_system(world: &mut World) -> anyhow::Result<()> {
+    let player = world.resource_entity::<Player>().ok();
+
+    let mut dropper_item_position = Vec::new();
+
+    for (_, DropItemCommand { dropper, item }) in world.query::<&DropItemCommand>().into_iter() {
+        let dropper = *dropper;
+        let item = *item;
+
+        let position = world.get::<Position>(dropper)?;
+
+        dropper_item_position.push((dropper, item, *position));
+    }
+
+    for (dropper, item, position) in dropper_item_position {
+        world.insert_one(item, position)?;
+
+        if Some(dropper) == player {
+            let name = world.get::<Name>(item)?;
+            GameLog::resource_push(world, format!("You drop the {}.", name.as_str()))?;
+        }
+    }
 
     Ok(())
 }

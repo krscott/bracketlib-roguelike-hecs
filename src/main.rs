@@ -21,7 +21,7 @@ mod visibility_system;
 
 use damage_system::damage_system;
 use despawn_entities_system::despawn_entities_system;
-use inventory::{pickup_item_system, use_item_system};
+use inventory::{drop_item_system, pickup_item_system, use_item_system};
 use map_indexing_system::map_indexing_system;
 use melee_combat_system::melee_combat_system;
 use monster_ai_system::monster_ai_system;
@@ -38,6 +38,7 @@ pub enum RunState {
     PlayerTurn,
     AiTurn,
     ShowInventory,
+    ShowDropMenu,
 }
 
 pub struct State {
@@ -68,6 +69,7 @@ impl State {
         report_system_error(melee_combat_system(world));
         report_system_error(damage_system(world));
         report_system_error(pickup_item_system(world));
+        report_system_error(drop_item_system(world));
 
         // Cleanup
         despawn_entities_system(world);
@@ -109,10 +111,16 @@ impl GameState for State {
                 RunState::AwaitingInput
             }
             RunState::ShowInventory => {
-                // TODO: Separate UI and input response
-                match gui::ui_input(context, &mut self.world) {
+                match gui::ui_inventory_use_input(context, &mut self.world) {
                     gui::ItemMenuResult::Cancel => RunState::AwaitingInput,
                     gui::ItemMenuResult::NoResponse => RunState::ShowInventory,
+                    gui::ItemMenuResult::Selected => RunState::PlayerTurn,
+                }
+            }
+            RunState::ShowDropMenu => {
+                match gui::ui_inventory_drop_input(context, &mut self.world) {
+                    gui::ItemMenuResult::Cancel => RunState::AwaitingInput,
+                    gui::ItemMenuResult::NoResponse => RunState::ShowDropMenu,
                     gui::ItemMenuResult::Selected => RunState::PlayerTurn,
                 }
             }
@@ -123,7 +131,20 @@ impl GameState for State {
 
         match run_state {
             RunState::ShowInventory => {
-                gui::draw_inventory(context, &mut self.world, &self.config);
+                gui::draw_inventory_menu(
+                    context,
+                    &mut self.world,
+                    &self.config,
+                    "Use from Inventory",
+                );
+            }
+            RunState::ShowDropMenu => {
+                gui::draw_inventory_menu(
+                    context,
+                    &mut self.world,
+                    &self.config,
+                    "Drop from Inventory",
+                );
             }
             _ => {}
         }
