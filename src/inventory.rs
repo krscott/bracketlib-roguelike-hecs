@@ -63,7 +63,12 @@ pub fn use_item_system(world: &mut World) -> anyhow::Result<()> {
     let mut items_to_despawn = Vec::new();
 
     for (_, UseItemCommand { user, item }) in world.query::<&UseItemCommand>().into_iter() {
-        let mut item_name = match world.query_one::<&Name>(*item) {
+        let user = *user;
+        let item = *item;
+
+        let is_user_player = Some(user) == player_entity;
+
+        let mut item_name = match world.query_one::<&Name>(item) {
             Ok(query) => query,
             Err(err) => {
                 console::log(format!(
@@ -77,14 +82,24 @@ pub fn use_item_system(world: &mut World) -> anyhow::Result<()> {
 
         let Name(item_name) = item_name.get().expect("Unfiltered query");
 
-        if Some(*user) == player_entity {
-            GameLog::resource_push(
-                world,
-                format!("You want to use the {}, but don't know how!", item_name),
-            )?;
+        if is_user_player {
+            GameLog::resource_push(world, format!("You use the {}.", item_name))?;
         }
 
-        items_to_despawn.push(*item);
+        if let Ok(mut stats) = world.get_mut::<CombatStats>(user) {
+            if let Ok(healing_item) = world.get::<HealingItem>(item) {
+                stats.hp = i32::min(stats.max_hp, stats.hp + healing_item.heal_amount);
+
+                if is_user_player {
+                    GameLog::resource_push(
+                        world,
+                        format!("It heals you for {} hp.", healing_item.heal_amount),
+                    )?;
+                }
+            }
+        }
+
+        items_to_despawn.push(item);
     }
 
     queue_despawn_batch(world, items_to_despawn);
