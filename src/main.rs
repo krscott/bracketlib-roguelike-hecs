@@ -9,7 +9,6 @@ mod despawn_entities_system;
 mod gamelog;
 mod gui;
 mod inventory;
-mod map;
 mod map_indexing_system;
 mod melee_combat_system;
 mod monster_ai_system;
@@ -17,6 +16,7 @@ mod player;
 mod prelude;
 mod resource;
 mod spawner;
+mod tilemap;
 mod visibility_system;
 
 use damage_system::damage_system;
@@ -118,7 +118,7 @@ impl GameState for State {
             }
         };
 
-        map::draw_map(context, &self.world, &self.config);
+        tilemap::draw_map(context, &self.world, &self.config);
         gui::draw_ui(context, &self.world, &self.config);
 
         match run_state {
