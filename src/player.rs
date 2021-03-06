@@ -5,22 +5,24 @@ pub fn player_input(context: &mut BTerm, world: &mut World) -> anyhow::Result<Ru
     if let Some(key) = context.key {
         match key {
             VirtualKeyCode::Left | VirtualKeyCode::Numpad4 | VirtualKeyCode::H => {
-                try_move_player(world, -1, 0)
+                try_player_move_and_attack(world, -1, 0)
             }
             VirtualKeyCode::Right | VirtualKeyCode::Numpad6 | VirtualKeyCode::L => {
-                try_move_player(world, 1, 0)
+                try_player_move_and_attack(world, 1, 0)
             }
             VirtualKeyCode::Up | VirtualKeyCode::Numpad8 | VirtualKeyCode::K => {
-                try_move_player(world, 0, -1)
+                try_player_move_and_attack(world, 0, -1)
             }
             VirtualKeyCode::Down | VirtualKeyCode::Numpad2 | VirtualKeyCode::J => {
-                try_move_player(world, 0, 1)
+                try_player_move_and_attack(world, 0, 1)
             }
-            VirtualKeyCode::Numpad7 | VirtualKeyCode::Y => try_move_player(world, -1, -1),
-            VirtualKeyCode::Numpad9 | VirtualKeyCode::U => try_move_player(world, 1, -1),
-            VirtualKeyCode::Numpad1 | VirtualKeyCode::B => try_move_player(world, -1, 1),
-            VirtualKeyCode::Numpad3 | VirtualKeyCode::N => try_move_player(world, 1, 1),
-            VirtualKeyCode::Numpad5 | VirtualKeyCode::Period => try_move_player(world, 0, 0),
+            VirtualKeyCode::Numpad7 | VirtualKeyCode::Y => {
+                try_player_move_and_attack(world, -1, -1)
+            }
+            VirtualKeyCode::Numpad9 | VirtualKeyCode::U => try_player_move_and_attack(world, 1, -1),
+            VirtualKeyCode::Numpad1 | VirtualKeyCode::B => try_player_move_and_attack(world, -1, 1),
+            VirtualKeyCode::Numpad3 | VirtualKeyCode::N => try_player_move_and_attack(world, 1, 1),
+            VirtualKeyCode::Numpad5 | VirtualKeyCode::Period => Ok(RunState::PlayerTurn),
             VirtualKeyCode::G => try_pickup_item(world),
             VirtualKeyCode::I => Ok(RunState::ShowInventory),
             VirtualKeyCode::D => Ok(RunState::ShowDropMenu),
@@ -32,7 +34,7 @@ pub fn player_input(context: &mut BTerm, world: &mut World) -> anyhow::Result<Ru
 }
 
 /// Move the player if possible
-fn try_move_player(world: &mut World, dx: i32, dy: i32) -> anyhow::Result<RunState> {
+fn try_player_move_and_attack(world: &mut World, dx: i32, dy: i32) -> anyhow::Result<RunState> {
     let mut is_taking_turn = false;
     let mut attack_cmd_bundle = None;
 
