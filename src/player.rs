@@ -1,17 +1,4 @@
-use bracket_lib::prelude::{BTerm, VirtualKeyCode};
-use hecs::World;
-
-use crate::{
-    command::{InitiateAttackCommand, WorldCommands},
-    components::{CombatStats, Item, Position, Viewshed},
-    gamelog::GameLog,
-    inventory::PickupItemCommand,
-    map::Map,
-    RunState,
-};
-
-#[derive(Debug)]
-pub struct Player;
+use crate::prelude::*;
 
 /// Check for player input and try to move Player entity
 pub fn player_input(context: &mut BTerm, world: &mut World) -> anyhow::Result<RunState> {
@@ -48,7 +35,7 @@ fn try_move_player(world: &mut World, dx: i32, dy: i32) -> anyhow::Result<RunSta
     let mut is_taking_turn = false;
     let mut attack_cmd_bundle = None;
 
-    if let Some((_, map)) = world.query::<&Map>().into_iter().next() {
+    if let Some((_, map)) = world.query::<&TileMap>().into_iter().next() {
         'outer: for (player_entity, (_player, pos, viewshed)) in world
             .query::<(&Player, &mut Position, &mut Viewshed)>()
             .into_iter()

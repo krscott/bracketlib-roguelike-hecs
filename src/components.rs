@@ -1,6 +1,4 @@
-use std::fmt::Display;
-
-use bracket_lib::prelude::{FontCharType, Point, RGB};
+use crate::prelude::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Position {
@@ -82,4 +80,39 @@ pub struct Item;
 #[derive(Debug)]
 pub struct HealingItem {
     pub heal_amount: i32,
+}
+
+#[derive(Debug)]
+pub struct InitiateAttackCommand {
+    pub attacker: Entity,
+    pub defender: Entity,
+}
+
+#[derive(Debug)]
+pub struct DamageCommand {
+    pub entity: Entity,
+    pub amount: i32,
+}
+
+#[derive(Debug)]
+pub struct DespawnCommand(pub Entity);
+
+#[derive(Debug)]
+pub struct Player;
+
+#[derive(Debug)]
+pub struct InInventory {
+    pub owner: Entity,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct PickupItemCommand {
+    pub collector: Entity,
+    pub item: Entity,
+}
+
+#[derive(Debug)]
+pub struct UseItemCommand {
+    pub user: Entity,
+    pub item: Entity,
 }

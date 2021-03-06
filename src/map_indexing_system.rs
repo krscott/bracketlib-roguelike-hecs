@@ -1,12 +1,7 @@
-use hecs::World;
-
-use crate::{
-    components::{BlocksTile, Position},
-    map::Map,
-};
+use crate::prelude::*;
 
 pub fn map_indexing_system(world: &World) {
-    for (_, map) in world.query::<&mut Map>().into_iter() {
+    for (_, map) in world.query::<&mut TileMap>().into_iter() {
         map.reset_blocked_tiles();
         map.clear_content_index();
 

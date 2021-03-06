@@ -1,16 +1,4 @@
-use bracket_lib::prelude::{letter_to_option, to_cp437, BTerm, FontCharType, VirtualKeyCode, RGB};
-use hecs::World;
-
-use crate::{
-    command::WorldCommands,
-    components::{CombatStats, Name},
-    config::Config,
-    gamelog::GameLog,
-    inventory::{get_inventory_list, UseItemCommand},
-    map::Map,
-    player::Player,
-    resource::WorldResources,
-};
+use crate::{inventory::get_inventory_list, prelude::*};
 
 pub const MAP_VIEW_WIDTH: usize = 80;
 pub const MAP_VIEW_HEIGHT: usize = 43;
@@ -112,7 +100,7 @@ pub fn draw_ui(context: &mut BTerm, world: &World, config: &Config) {
 fn draw_tooltips(context: &mut BTerm, world: &World, config: &Config) {
     let (mx, my) = context.mouse_pos();
 
-    for (_, map) in world.query::<&mut Map>().into_iter() {
+    for (_, map) in world.query::<&mut TileMap>().into_iter() {
         if !map.is_tile_visible(mx, my) {
             continue;
         }

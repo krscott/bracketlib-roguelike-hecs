@@ -1,16 +1,6 @@
 use std::collections::HashSet;
 
-use bracket_lib::prelude::console;
-use hecs::World;
-
-use crate::{
-    command::{DamageCommand, DespawnCommand, WorldCommands},
-    components::Name,
-    gamelog::GameLog,
-    player::Player,
-    resource::WorldResources,
-    CombatStats,
-};
+use crate::prelude::*;
 
 pub fn damage_system(world: &mut World) -> anyhow::Result<()> {
     let mut despawn_entities = HashSet::new();

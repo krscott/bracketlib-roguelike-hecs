@@ -1,13 +1,4 @@
-use bracket_lib::prelude::console;
-use hecs::World;
-
-use crate::{
-    command::{DamageCommand, InitiateAttackCommand, WorldCommands},
-    components::{CombatStats, Name},
-    gamelog::GameLog,
-    player::Player,
-    resource::WorldResources,
-};
+use crate::prelude::*;
 
 pub fn melee_combat_system(world: &mut World) -> anyhow::Result<()> {
     let mut damage_commands_batch = Vec::new();

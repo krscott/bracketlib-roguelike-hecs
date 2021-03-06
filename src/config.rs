@@ -1,9 +1,7 @@
-use bracket_lib::prelude::{to_cp437, FontCharType, RGB};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
-use thiserror::Error;
 
-use crate::components::Renderable;
+use crate::prelude::*;
 
 pub fn default_user_config() -> UserConfig {
     // Colors: https://lospec.com/palette-list/vinik24

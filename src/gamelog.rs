@@ -1,6 +1,6 @@
-use hecs::{ComponentError, World};
+use hecs::ComponentError;
 
-use crate::resource::WorldResources;
+use crate::prelude::*;
 
 #[derive(Debug)]
 pub struct GameLog {

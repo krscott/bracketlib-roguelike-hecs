@@ -1,8 +1,4 @@
-use bracket_lib::{
-    prelude::{console, main_loop, BError, BTerm, BTermBuilder, GameState},
-    random::RandomNumberGenerator,
-};
-use hecs::World;
+use bracket_lib::random::RandomNumberGenerator;
 
 mod cliopt;
 mod command;
@@ -18,23 +14,19 @@ mod map_indexing_system;
 mod melee_combat_system;
 mod monster_ai_system;
 mod player;
+mod prelude;
 mod resource;
 mod spawner;
 mod visibility_system;
 
-use command::WorldCommands;
-use components::CombatStats;
-use config::Config;
 use damage_system::damage_system;
 use despawn_entities_system::despawn_entities_system;
-use gamelog::GameLog;
 use inventory::{pickup_item_system, use_item_system};
-use map::Map;
 use map_indexing_system::map_indexing_system;
 use melee_combat_system::melee_combat_system;
 use monster_ai_system::monster_ai_system;
 use player::player_input;
-use resource::WorldResources;
+use prelude::*;
 use visibility_system::visibility_system;
 
 const GAME_TITLE: &'static str = "Rusty-hecs Roguelike";
@@ -147,7 +139,7 @@ fn main() -> BError {
     let config = opts.config;
 
     // Generate map
-    let map = Map::rooms_and_cooridors(gui::MAP_VIEW_WIDTH as i32, gui::MAP_VIEW_HEIGHT as i32);
+    let map = TileMap::rooms_and_cooridors(gui::MAP_VIEW_WIDTH as i32, gui::MAP_VIEW_HEIGHT as i32);
 
     // Create ECS World
     let mut world = World::new();

@@ -1,18 +1,11 @@
-use bracket_lib::{
-    prelude::{Algorithm2D, BTerm, BaseMap, DistanceAlg, FontCharType, Point, Rect, SmallVec, RGB},
-    random::RandomNumberGenerator,
-};
-use hecs::{Entity, World};
+use bracket_lib::random::RandomNumberGenerator;
 use itertools::Itertools;
 use std::{
     cmp::{max, min},
     vec,
 };
 
-use crate::{
-    components::{Position, Renderable},
-    config::Config,
-};
+use crate::prelude::*;
 
 const EMPTY_ENTITY_ARRAY: &'static [Entity] = &[];
 
@@ -56,7 +49,7 @@ impl TileType {
     }
 }
 
-pub struct Map {
+pub struct TileMap {
     tiles: Vec<TileType>,
     rooms: Vec<Rect>,
     width: i32,
@@ -67,7 +60,7 @@ pub struct Map {
     tile_content: Vec<Vec<Entity>>,
 }
 
-impl Map {
+impl TileMap {
     fn blank(width: i32, height: i32, tile_type: TileType) -> Self {
         assert!(width > 0);
         assert!(height > 0);
@@ -279,7 +272,7 @@ impl Map {
     }
 }
 
-impl BaseMap for Map {
+impl BaseMap for TileMap {
     fn is_opaque(&self, index: usize) -> bool {
         if let Some(tile) = self.tiles.get(index) {
             tile.is_opaque()
@@ -320,14 +313,14 @@ impl BaseMap for Map {
     }
 }
 
-impl Algorithm2D for Map {
+impl Algorithm2D for TileMap {
     fn dimensions(&self) -> Point {
         Point::new(self.width, self.height)
     }
 }
 
 pub fn draw_map(context: &mut BTerm, world: &World, config: &Config) {
-    for (_, map) in world.query::<&mut Map>().into_iter() {
+    for (_, map) in world.query::<&mut TileMap>().into_iter() {
         for (i, tile) in map.tiles.iter().enumerate() {
             if map.revealed_tiles[i] {
                 let (x, y) = map.get_coords(i);

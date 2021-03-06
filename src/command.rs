@@ -1,5 +1,4 @@
-use bracket_lib::prelude::console;
-use hecs::{Component, Entity, World};
+use crate::prelude::*;
 
 pub trait WorldCommands {
     fn spawn_command<T: Component>(&mut self, component: T) -> Entity;
@@ -40,18 +39,3 @@ impl WorldCommands for World {
 
 #[derive(Debug)]
 struct Command;
-
-#[derive(Debug)]
-pub struct InitiateAttackCommand {
-    pub attacker: Entity,
-    pub defender: Entity,
-}
-
-#[derive(Debug)]
-pub struct DamageCommand {
-    pub entity: Entity,
-    pub amount: i32,
-}
-
-#[derive(Debug)]
-pub struct DespawnCommand(pub Entity);

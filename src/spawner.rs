@@ -1,15 +1,6 @@
 use anyhow::anyhow;
-use bracket_lib::{prelude::Rect, random::RandomNumberGenerator};
-use hecs::{Entity, World};
 
-use crate::{
-    components::{
-        BlocksTile, CombatStats, HealingItem, Item, Monster, Name, Position, Renderable, Viewshed,
-    },
-    config::Config,
-    player::Player,
-    resource::WorldResources,
-};
+use crate::prelude::*;
 
 const MAX_MONSTERS: i32 = 4;
 const MAX_ITEMS: i32 = 2;

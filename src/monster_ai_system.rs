@@ -1,14 +1,4 @@
-use bracket_lib::prelude::{a_star_search, DistanceAlg};
-use hecs::{Entity, World};
-
-use crate::{
-    command::{InitiateAttackCommand, WorldCommands},
-    components::{Monster, Name, Position, Viewshed},
-    map::Map,
-    player::Player,
-    resource::WorldResources,
-    RunState,
-};
+use crate::prelude::*;
 
 pub fn monster_ai_system(world: &mut World) {
     match world.resource_clone::<RunState>() {
@@ -24,7 +14,7 @@ pub fn monster_ai_system(world: &mut World) {
             .into_iter()
             .next()
         {
-            if let Some((_, mut map)) = world.query::<&mut Map>().into_iter().next() {
+            if let Some((_, mut map)) = world.query::<&mut TileMap>().into_iter().next() {
                 if let Some(player_pos_index) = map.get_index(player_pos.x, player_pos.y) {
                     for (monster_entity, (_, monster_viewshed, _monster_name, monster_pos)) in world
                         .query::<(&Monster, &mut Viewshed, &Name, &mut Position)>()
@@ -51,7 +41,7 @@ pub fn monster_ai_system(world: &mut World) {
 
 fn monster_ai_to_player(
     attack_cmd_batch: &mut Vec<InitiateAttackCommand>,
-    map: &mut Map,
+    map: &mut TileMap,
     monster_entity: Entity,
     monster_pos: &mut Position,
     monster_viewshed: &mut Viewshed,

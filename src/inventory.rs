@@ -1,29 +1,4 @@
-use bracket_lib::prelude::console;
-use hecs::{Entity, World};
-
-use crate::{
-    components::{Name, Position},
-    gamelog::GameLog,
-    player::Player,
-    resource::WorldResources,
-};
-
-#[derive(Debug)]
-pub struct InInventory {
-    pub owner: Entity,
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct PickupItemCommand {
-    pub collector: Entity,
-    pub item: Entity,
-}
-
-#[derive(Debug)]
-pub struct UseItemCommand {
-    pub user: Entity,
-    pub item: Entity,
-}
+use crate::prelude::*;
 
 pub fn pickup_item_system(world: &mut World) -> anyhow::Result<()> {
     let player_entity = world.resource_entity::<Player>().ok();
